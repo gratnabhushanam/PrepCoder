@@ -177,7 +177,7 @@ router.get('/companies/:name', async (req, res) => {
 // @desc    Get leaderboard rankings
 router.get('/leaderboard', async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find({ role: { $ne: 'admin' } });
     const ranked = users
       .map(u => ({
         _id: u._id,
