@@ -15,18 +15,39 @@ export default function Dashboard() {
     { id: 4, text: "Perform a mock HR Interview round", done: false }
   ]);
 
-  // Sync initial tasks based on user history
+  // Sync initial tasks based on user history and fetch a real problem
   useEffect(() => {
+    const fetchRealTasks = async () => {
+      try {
+        let problemText = "Solve a coding problem from the workspace";
+        
+        // Fetch a real problem to solve
+        const res = await axios.get(`${API_BASE}/coding/concepts`);
+        if (res.data && res.data.length > 0) {
+          const conceptId = res.data[0]._id || res.data[0].id;
+          const probRes = await axios.get(`${API_BASE}/coding/questions?concept_id=${conceptId}&difficulty=Easy`);
+          if (probRes.data && probRes.data.length > 0) {
+            problemText = `Solve '${probRes.data[0].title}' in the workspace`;
+          }
+        }
+
+        if (user) {
+          setTasks([
+            { id: 1, text: problemText, done: user.solvedProblems?.length > 0 },
+            { id: 2, text: "Complete one MCQ topic test", done: user.mcqStats?.totalAttempted > 0 },
+            { id: 3, text: "Upload your resume to check ATS Score", done: user.resumeData?.atsScore > 0 },
+            { id: 4, text: "Perform a mock HR Interview round", done: user.aiInterviewStats?.length > 0 }
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to load real tasks", err);
+      }
+    };
+    
     if (user) {
-      setTasks(prev => prev.map(t => {
-        if (t.id === 1 && user.solvedProblems?.length > 0) return { ...t, done: true };
-        if (t.id === 2 && user.mcqStats?.totalAttempted > 0) return { ...t, done: true };
-        if (t.id === 3 && user.resumeData?.atsScore > 0) return { ...t, done: true };
-        if (t.id === 4 && user.aiInterviewStats?.length > 0) return { ...t, done: true };
-        return t;
-      }));
+      fetchRealTasks();
     }
-  }, [user]);
+  }, [user, API_BASE]);
 
   const toggleTask = (id) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
