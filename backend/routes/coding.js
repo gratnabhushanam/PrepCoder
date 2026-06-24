@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/mysql');
+const mongoose = require('mongoose');
+const { Concept, Question, Submission, User } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 const { executeCode } = require('../services/codeRunner');
 
@@ -8,33 +9,40 @@ const { executeCode } = require('../services/codeRunner');
 // @desc    Get all concepts and user progress
 router.get('/concepts', protect, async (req, res) => {
   try {
-    const userId = req.user._id || req.user.id; // Fallback to either based on how auth sets it
+    const userId = req.user._id || req.user.id;
+    const concepts = await Concept.find().lean();
+    const questions = await Question.find({ status: 'Active' }).lean();
+    
+    // Get user's accepted submissions
+    const acceptedSubs = await Submission.find({ 
+      user_id: userId, 
+      status: 'Accepted' 
+    }).distinct('question_id');
 
-    // Get concepts and questions count
-    const [concepts] = await pool.query(`
-      SELECT c.*, 
-        (SELECT COUNT(*) FROM questions q WHERE q.concept_id = c.id) as total_questions,
-        (SELECT COUNT(*) FROM questions q WHERE q.concept_id = c.id AND q.difficulty = 'Easy') as easy_count,
-        (SELECT COUNT(*) FROM questions q WHERE q.concept_id = c.id AND q.difficulty = 'Medium') as medium_count,
-        (SELECT COUNT(*) FROM questions q WHERE q.concept_id = c.id AND q.difficulty = 'Hard') as hard_count,
-        (SELECT COUNT(DISTINCT s.question_id) 
-         FROM submissions s 
-         JOIN questions q ON s.question_id = q.id 
-         WHERE s.user_id = ? AND s.status = 'Accepted' AND q.concept_id = c.id) as solved_count
-      FROM concepts c
-    `, [userId]);
+    const acceptedQuestionIds = new Set(acceptedSubs.map(id => id.toString()));
 
-    const formattedConcepts = concepts.map(c => ({
-      id: c.id,
-      name: c.name,
-      description: c.description,
-      icon: c.icon,
-      totalCount: Number(c.total_questions) || 0,
-      easyCount: Number(c.easy_count) || 0,
-      mediumCount: Number(c.medium_count) || 0,
-      hardCount: Number(c.hard_count) || 0,
-      progress: Number(c.total_questions) > 0 ? Math.round((Number(c.solved_count) / Number(c.total_questions)) * 100) : 0
-    }));
+    const formattedConcepts = concepts.map(c => {
+      const conceptQuestions = questions.filter(q => q.concept_id && q.concept_id.toString() === c._id.toString());
+      
+      const totalCount = conceptQuestions.length;
+      const easyCount = conceptQuestions.filter(q => q.difficulty === 'Easy').length;
+      const mediumCount = conceptQuestions.filter(q => q.difficulty === 'Medium').length;
+      const hardCount = conceptQuestions.filter(q => q.difficulty === 'Hard').length;
+      
+      const solvedCount = conceptQuestions.filter(q => acceptedQuestionIds.has(q._id.toString())).length;
+
+      return {
+        id: c._id,
+        name: c.name,
+        description: c.description,
+        icon: c.icon,
+        totalCount,
+        easyCount,
+        mediumCount,
+        hardCount,
+        progress: totalCount > 0 ? Math.round((solvedCount / totalCount) * 100) : 0
+      };
+    });
 
     res.json(formattedConcepts);
   } catch (error) {
@@ -50,63 +58,61 @@ router.get('/questions', protect, async (req, res) => {
   const userId = req.user._id || req.user.id;
 
   try {
-    let query = `
-      SELECT q.id, q.title, q.difficulty, c.name as concept_name,
-        EXISTS(SELECT 1 FROM submissions s WHERE s.user_id = ? AND s.question_id = q.id AND s.status = 'Accepted') as is_solved,
-        COALESCE(stat.solved_users, 0) as solved_users,
-        COALESCE(stat.total_subs, 0) as total_subs,
-        COALESCE(stat.accepted_subs, 0) as accepted_subs
-      FROM questions q
-      LEFT JOIN concepts c ON q.concept_id = c.id
-      LEFT JOIN (
-        SELECT question_id, 
-               COUNT(DISTINCT CASE WHEN status = 'Accepted' THEN user_id END) as solved_users,
-               COUNT(*) as total_subs,
-               SUM(CASE WHEN status = 'Accepted' THEN 1 ELSE 0 END) as accepted_subs
-        FROM submissions
-        GROUP BY question_id
-      ) stat ON q.id = stat.question_id
-      WHERE 1=1
-    `;
-    const params = [userId];
+    const query = { status: 'Active' };
+    if (concept_id) query.concept_id = concept_id;
+    if (difficulty) query.difficulty = difficulty;
+    if (company) query.companies = company;
 
-    if (concept_id) {
-      query += ' AND q.concept_id = ?';
-      params.push(concept_id);
-    }
-    if (difficulty) {
-      query += ' AND q.difficulty = ?';
-      params.push(difficulty);
-    }
-    if (company) {
-      query += ` AND q.id IN (
-        SELECT qc.question_id FROM question_companies qc 
-        JOIN company_tags ct ON qc.company_id = ct.id 
-        WHERE ct.name = ?
-      )`;
-      params.push(company);
-    }
+    const questions = await Question.find(query).populate('concept_id', 'name').lean();
 
-    const [questions] = await pool.query(query, params);
+    // Fetch user's accepted questions
+    const userAcceptedSubs = await Submission.find({ 
+      user_id: userId, 
+      status: 'Accepted' 
+    }).distinct('question_id');
+    const acceptedIds = new Set(userAcceptedSubs.map(id => id.toString()));
 
-    // Fetch company tags for each question (doing it separate to keep query simple, or we could group_concat)
-    for (let q of questions) {
-      const [tags] = await pool.query(`
-        SELECT ct.name FROM company_tags ct
-        JOIN question_companies qc ON ct.id = qc.company_id
-        WHERE qc.question_id = ?
-      `, [q.id]);
-      q.companies = tags.map(t => t.name);
-      
-      const total = Number(q.total_subs) || 0;
-      const accepted = Number(q.accepted_subs) || 0;
-      q.acceptance_rate = total > 0 ? ((accepted / total) * 100).toFixed(2) : '0.00';
-      q.solved_users = Number(q.solved_users) || 0;
-      delete q.total_subs;
-      delete q.accepted_subs;
-    }
+    // Aggregate overall submission stats per question
+    const stats = await Submission.aggregate([
+      {
+        $group: {
+          _id: "$question_id",
+          solved_users: { $addToSet: { $cond: [{ $eq: ["$status", "Accepted"] }, "$user_id", null] } },
+          total_subs: { $sum: 1 },
+          accepted_subs: { $sum: { $cond: [{ $eq: ["$status", "Accepted"] }, 1, 0] } }
+        }
+      }
+    ]);
 
-    res.json(questions);
+    const statsMap = {};
+    stats.forEach(s => {
+      // Remove null from addToSet
+      const validUsers = s.solved_users.filter(u => u !== null);
+      statsMap[s._id.toString()] = {
+        solved_users: validUsers.length,
+        total_subs: s.total_subs,
+        accepted_subs: s.accepted_subs
+      };
+    });
+
+    const formattedQuestions = questions.map(q => {
+      const stat = statsMap[q._id.toString()] || { solved_users: 0, total_subs: 0, accepted_subs: 0 };
+      const total = stat.total_subs;
+      const accepted = stat.accepted_subs;
+
+      return {
+        id: q._id,
+        title: q.title,
+        difficulty: q.difficulty,
+        concept_name: q.concept_id ? q.concept_id.name : null,
+        is_solved: acceptedIds.has(q._id.toString()),
+        solved_users: stat.solved_users,
+        acceptance_rate: total > 0 ? ((accepted / total) * 100).toFixed(2) : '0.00',
+        companies: q.companies || []
+      };
+    });
+
+    res.json(formattedQuestions);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -117,49 +123,37 @@ router.get('/questions', protect, async (req, res) => {
 // @desc    Get single problem by ID with public testcases
 router.get('/problem/:id', protect, async (req, res) => {
   try {
-    const [qRows] = await pool.query('SELECT * FROM questions WHERE id = ?', [req.params.id]);
-    if (qRows.length === 0) return res.status(404).json({ message: 'Problem not found' });
-    const problem = qRows[0];
-
-    const [tcRows] = await pool.query('SELECT input, expected_output as expected FROM public_testcases WHERE question_id = ?', [problem.id]);
-    const [companyRows] = await pool.query(`
-      SELECT ct.name FROM company_tags ct
-      JOIN question_companies qc ON ct.id = qc.company_id
-      WHERE qc.question_id = ?
-    `, [problem.id]);
+    const question = await Question.findById(req.params.id).lean();
+    if (!question) return res.status(404).json({ message: 'Problem not found' });
 
     const userId = req.user._id || req.user.id;
-    const [solvedRows] = await pool.query("SELECT 1 FROM submissions WHERE user_id = ? AND question_id = ? AND status = 'Accepted' LIMIT 1", [userId, problem.id]);
-    const is_solved = solvedRows.length > 0;
+    
+    const is_solved = await Submission.exists({ 
+      user_id: userId, 
+      question_id: question._id, 
+      status: 'Accepted' 
+    });
 
-    const [lastSubRows] = await pool.query("SELECT code, language FROM submissions WHERE user_id = ? AND question_id = ? ORDER BY submitted_at DESC LIMIT 1", [userId, problem.id]);
-    const last_code = lastSubRows.length > 0 ? lastSubRows[0].code : null;
-    const last_language = lastSubRows.length > 0 ? lastSubRows[0].language : null;
-
-    const safeParse = (str) => {
-      try {
-        if (!str || !str.trim()) return [];
-        return JSON.parse(str);
-      } catch (e) {
-        return [];
-      }
-    };
+    const lastSub = await Submission.findOne({ 
+      user_id: userId, 
+      question_id: question._id 
+    }).sort({ submitted_at: -1 }).lean();
 
     res.json({
-      id: problem.id,
-      title: problem.title,
-      difficulty: problem.difficulty,
-      statement: problem.statement,
-      constraints: problem.constraints,
-      inputFormat: problem.input_format,
-      outputFormat: problem.output_format,
-      examples: safeParse(problem.examples),
-      hints: safeParse(problem.hints),
-      companies: companyRows.map(c => c.name),
-      testCases: tcRows, // Send only public test cases
-      is_solved,
-      last_code,
-      last_language
+      id: question._id,
+      title: question.title,
+      difficulty: question.difficulty,
+      statement: question.statement,
+      constraints: question.constraints,
+      inputFormat: question.input_format,
+      outputFormat: question.output_format,
+      examples: question.examples || [],
+      hints: question.hints || [],
+      companies: question.companies || [],
+      testCases: question.public_testcases || [],
+      is_solved: !!is_solved,
+      last_code: lastSub ? lastSub.code : null,
+      last_language: lastSub ? lastSub.language : null
     });
   } catch (error) {
     console.error(error);
@@ -174,14 +168,16 @@ router.post('/run', async (req, res) => {
   if (!problemId || !language || !code) return res.status(400).json({ message: 'Missing fields' });
 
   try {
-    const [qRows] = await pool.query('SELECT title FROM questions WHERE id = ?', [problemId]);
-    if (qRows.length === 0) return res.status(404).json({ message: 'Problem not found' });
+    const question = await Question.findById(problemId).lean();
+    if (!question) return res.status(404).json({ message: 'Problem not found' });
 
-    const [publicCases] = await pool.query('SELECT input, expected_output as expected FROM public_testcases WHERE question_id = ?', [problemId]);
+    const formattedCases = (question.public_testcases || []).map(tc => ({ 
+      input: tc.input, 
+      expected: tc.expected_output,
+      isHidden: false 
+    }));
     
-    // Convert to format executeCode expects
-    const formattedCases = publicCases.map(tc => ({ ...tc, isHidden: false }));
-    const results = await executeCode(qRows[0].title, language, code, formattedCases);
+    const results = await executeCode(question.title, language, code, formattedCases);
     res.json(results);
   } catch (error) {
     console.error(error);
@@ -198,19 +194,15 @@ router.post('/submit', protect, async (req, res) => {
   if (!problemId || !language || !code) return res.status(400).json({ message: 'Missing fields' });
 
   try {
-    const [qRows] = await pool.query('SELECT id, title, difficulty FROM questions WHERE id = ?', [problemId]);
-    if (qRows.length === 0) return res.status(404).json({ message: 'Problem not found' });
-    const problem = qRows[0];
+    const question = await Question.findById(problemId).lean();
+    if (!question) return res.status(404).json({ message: 'Problem not found' });
 
-    const [publicCases] = await pool.query('SELECT input, expected_output as expected FROM public_testcases WHERE question_id = ?', [problemId]);
-    const [hiddenCases] = await pool.query('SELECT input, expected_output as expected FROM hidden_testcases WHERE question_id = ?', [problemId]);
+    const publicCases = (question.public_testcases || []).map(tc => ({ input: tc.input, expected: tc.expected_output, isHidden: false }));
+    const hiddenCases = (question.hidden_testcases || []).map(tc => ({ input: tc.input, expected: tc.expected_output, isHidden: true }));
     
-    const allCases = [
-      ...publicCases.map(tc => ({ ...tc, isHidden: false })),
-      ...hiddenCases.map(tc => ({ ...tc, isHidden: true }))
-    ];
+    const allCases = [...publicCases, ...hiddenCases];
 
-    const results = await executeCode(problem.title, language, code, allCases);
+    const results = await executeCode(question.title, language, code, allCases);
     
     const totalCases = results.length;
     const passedCases = results.filter(r => r.passed).length;
@@ -224,61 +216,56 @@ router.post('/submit', protect, async (req, res) => {
     }
 
     // Save submission
-    await pool.query(`
-      INSERT INTO submissions (user_id, question_id, code, language, status, passed_cases, total_cases, execution_time)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [userId, problemId, code, language, status, passedCases, totalCases, Math.floor(Math.random() * 50) + 10]);
+    await Submission.create({
+      user_id: userId,
+      question_id: problemId,
+      code,
+      language,
+      status,
+      passed_cases: passedCases,
+      total_cases: totalCases,
+      execution_time: Math.floor(Math.random() * 50) + 10 // Mock execution time
+    });
 
-    // Update user_progress if accepted
+    let user = await User.findById(userId);
+
     if (status === 'Accepted') {
-      const [upRows] = await pool.query('SELECT * FROM user_progress WHERE user_id = ?', [userId]);
-      if (upRows.length === 0) {
-        await pool.query(`
-          INSERT INTO user_progress (user_id, total_solved, easy_solved, medium_solved, hard_solved, current_streak)
-          VALUES (?, 1, ?, ?, ?, 1)
-        `, [
-          userId, 
-          problem.difficulty === 'Easy' ? 1 : 0,
-          problem.difficulty === 'Medium' ? 1 : 0,
-          problem.difficulty === 'Hard' ? 1 : 0
-        ]);
-      } else {
-        // Only increment if not solved before
-        const [prevSolved] = await pool.query(`
-          SELECT id FROM submissions 
-          WHERE user_id = ? AND question_id = ? AND status = 'Accepted' 
-          LIMIT 1, 1 -- offset 1 to check if there was a PREVIOUS accepted sub
-        `, [userId, problemId]);
+      // Check if previously accepted
+      const prevAccepted = await Submission.exists({ 
+        user_id: userId, 
+        question_id: problemId, 
+        status: 'Accepted',
+        _id: { $ne: null } // Just needs to exist other than this one if we wanted to be strict, but we already created it. Wait, we just created it.
+      });
 
-        if (prevSolved.length === 0) {
-          // This is the first accepted submission for this problem
-          const p = upRows[0];
-          await pool.query(`
-            UPDATE user_progress 
-            SET total_solved = total_solved + 1,
-                easy_solved = easy_solved + ?,
-                medium_solved = medium_solved + ?,
-                hard_solved = hard_solved + ?,
-                current_streak = current_streak + 1
-            WHERE user_id = ?
-          `, [
-            problem.difficulty === 'Easy' ? 1 : 0,
-            problem.difficulty === 'Medium' ? 1 : 0,
-            problem.difficulty === 'Hard' ? 1 : 0,
-            userId
-          ]);
+      // Actually, since we JUST created the accepted submission, finding one will ALWAYS return true.
+      // We need to count accepted submissions for this user and question. If it's exactly 1, it's the first time.
+      const acceptedCount = await Submission.countDocuments({
+        user_id: userId,
+        question_id: problemId,
+        status: 'Accepted'
+      });
+
+      if (acceptedCount === 1) {
+        // First time solved!
+        user.userProgress.total_solved += 1;
+        if (question.difficulty === 'Easy') user.userProgress.easy_solved += 1;
+        if (question.difficulty === 'Medium') user.userProgress.medium_solved += 1;
+        if (question.difficulty === 'Hard') user.userProgress.hard_solved += 1;
+        
+        user.userProgress.current_streak += 1; // Simple streak logic
+        if (!user.solvedProblems) user.solvedProblems = [];
+        if (!user.solvedProblems.includes(problemId.toString())) {
+          user.solvedProblems.push(problemId.toString());
         }
+        await user.save();
       }
     }
 
-    // Fetch updated stats
-    const [upRowsAfter] = await pool.query('SELECT * FROM user_progress WHERE user_id = ?', [userId]);
-    const progress = upRowsAfter.length > 0 ? upRowsAfter[0] : null;
-
-    const [totalSubs] = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN status = "Accepted" THEN 1 ELSE 0 END) as accepted FROM submissions WHERE user_id = ?', [userId]);
-    const totalSubmissionsCount = totalSubs[0].total ? Number(totalSubs[0].total) : 0;
-    const acceptedCount = totalSubs[0].accepted ? Number(totalSubs[0].accepted) : 0;
-    const acceptanceRate = totalSubmissionsCount > 0 ? Math.round((acceptedCount / totalSubmissionsCount) * 100) : 0;
+    // Aggregating user submission stats
+    const totalSubmissionsCount = await Submission.countDocuments({ user_id: userId });
+    const acceptedSubmissionsCount = await Submission.countDocuments({ user_id: userId, status: 'Accepted' });
+    const acceptanceRate = totalSubmissionsCount > 0 ? Math.round((acceptedSubmissionsCount / totalSubmissionsCount) * 100) : 0;
 
     res.json({
       status,
@@ -293,12 +280,12 @@ router.post('/submit', protect, async (req, res) => {
         expected: r.isHidden ? 'Hidden' : r.expected
       })),
       stats: {
-        totalSolved: progress ? progress.total_solved : 0,
-        easySolved: progress ? progress.easy_solved : 0,
-        mediumSolved: progress ? progress.medium_solved : 0,
-        hardSolved: progress ? progress.hard_solved : 0,
-        currentStreak: progress ? progress.current_streak : 0,
-        longestStreak: progress ? progress.longest_streak : 0,
+        totalSolved: user.userProgress?.total_solved || 0,
+        easySolved: user.userProgress?.easy_solved || 0,
+        mediumSolved: user.userProgress?.medium_solved || 0,
+        hardSolved: user.userProgress?.hard_solved || 0,
+        currentStreak: user.userProgress?.current_streak || 0,
+        longestStreak: user.userProgress?.current_streak || 0,
         totalSubmissions: totalSubmissionsCount,
         acceptanceRate: acceptanceRate
       }
@@ -320,14 +307,15 @@ router.get('/submissions', protect, async (req, res) => {
       return res.status(400).json({ message: 'problemId is required' });
     }
 
-    const [subs] = await pool.query(`
-      SELECT id, question_id, language, status, passed_cases, total_cases, execution_time, memory_used, submitted_at
-      FROM submissions
-      WHERE user_id = ? AND question_id = ?
-      ORDER BY submitted_at DESC
-    `, [userId, problemId]);
+    const subs = await Submission.find({ 
+      user_id: userId, 
+      question_id: problemId 
+    }).sort({ submitted_at: -1 }).lean();
 
-    res.json(subs);
+    res.json(subs.map(s => ({
+      ...s,
+      id: s._id
+    })));
   } catch (error) {
     console.error('Error fetching submissions:', error);
     res.status(500).json({ message: 'Failed to fetch submissions' });

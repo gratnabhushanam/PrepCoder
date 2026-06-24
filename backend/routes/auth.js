@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { pool } = require('../config/mysql');
+const { User } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 
 const generateToken = (id, email, role) => {
@@ -21,30 +21,30 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (existing.length > 0) {
+    const existing = await User.findOne({ email });
+    if (existing) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-      [name, email, hashedPassword, 'user']
-    );
-
-    const newUserId = result.insertId;
-
-    res.status(201).json({
-      _id: newUserId,
+    const newUser = await User.create({
       name,
       email,
-      role: 'user',
-      token: generateToken(newUserId, email, 'user'),
-      readinessScore: 45,
-      dailyStreak: 0,
-      solvedProblems: []
+      password: hashedPassword,
+      role: 'user'
+    });
+
+    res.status(201).json({
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      token: generateToken(newUser._id, newUser.email, newUser.role),
+      readinessScore: newUser.readinessScore,
+      dailyStreak: newUser.dailyStreak,
+      solvedProblems: newUser.solvedProblems
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -58,13 +58,12 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const user = await User.findOne({ email });
     
-    if (users.length === 0) {
+    if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const user = users[0];
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
@@ -72,11 +71,11 @@ router.post('/login', async (req, res) => {
     }
 
     res.json({
-      _id: user.id,
+      _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user.id, user.email, user.role),
+      token: generateToken(user._id, user.email, user.role),
       readinessScore: user.readinessScore,
       dailyStreak: user.dailyStreak,
       solvedProblems: user.solvedProblems || [],
@@ -92,11 +91,10 @@ router.post('/login', async (req, res) => {
 // @desc    Get user profile
 router.get('/profile', protect, async (req, res) => {
   try {
-    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
-    if (users.length > 0) {
-      const user = users[0];
+    const user = await User.findById(req.user.id);
+    if (user) {
       res.json({
-        _id: user.id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -120,33 +118,32 @@ router.get('/profile', protect, async (req, res) => {
 // @desc    Update user profile data
 router.put('/profile', protect, async (req, res) => {
   try {
-    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
-    if (users.length > 0) {
-      let user = users[0];
-      
-      const newName = req.body.name || user.name;
-      let newPassword = user.password;
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.name = req.body.name || user.name;
       
       if (req.body.password) {
         const salt = await bcrypt.genSalt(10);
-        newPassword = await bcrypt.hash(req.body.password, salt);
+        user.password = await bcrypt.hash(req.body.password, salt);
       }
       
-      const newReadiness = req.body.readinessScore !== undefined ? req.body.readinessScore : user.readinessScore;
-      const newStreak = req.body.dailyStreak !== undefined ? req.body.dailyStreak : user.dailyStreak;
+      if (req.body.readinessScore !== undefined) {
+        user.readinessScore = req.body.readinessScore;
+      }
       
-      await pool.query(
-        'UPDATE users SET name = ?, password = ?, readinessScore = ?, dailyStreak = ? WHERE id = ?',
-        [newName, newPassword, newReadiness, newStreak, user.id]
-      );
+      if (req.body.dailyStreak !== undefined) {
+        user.dailyStreak = req.body.dailyStreak;
+      }
+      
+      await user.save();
       
       res.json({
-        _id: user.id,
-        name: newName,
+        _id: user._id,
+        name: user.name,
         email: user.email,
         role: user.role,
-        readinessScore: newReadiness,
-        dailyStreak: newStreak,
+        readinessScore: user.readinessScore,
+        dailyStreak: user.dailyStreak,
         solvedProblems: user.solvedProblems || []
       });
     } else {
@@ -167,15 +164,16 @@ router.post('/forgot-password', async (req, res) => {
   }
 
   try {
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (users.length === 0) {
+    const user = await User.findOne({ email });
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, users[0].id]);
+    user.password = hashedPassword;
+    await user.save();
     
     res.json({ message: 'Password reset successful' });
   } catch (error) {

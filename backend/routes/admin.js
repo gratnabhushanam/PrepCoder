@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Mcq, Problem, Submission, Company } = require('../config/db');
+const { User, Mcq, Question, Submission, Company } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 
 // @route   GET /api/admin/analytics
@@ -9,7 +9,7 @@ router.get('/analytics', protect, async (req, res) => {
   try {
     const users = await User.find({});
     const mcqs = await Mcq.find({});
-    const problems = await Problem.find({});
+    const problems = await Question.find({});
     const submissions = await Submission.find({});
     const companies = await Company.find({});
 
@@ -147,7 +147,7 @@ router.post('/problems', protect, async (req, res) => {
   }
 
   try {
-    const newProb = await Problem.create({
+    const newProb = await Question.create({
       title,
       description,
       difficulty,

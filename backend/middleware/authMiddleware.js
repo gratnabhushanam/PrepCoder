@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/mysql');
+const { User } = require('../config/db');
 
 const protect = async (req, res, next) => {
   let token;
@@ -8,12 +8,12 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret-token-key-1234');
       
-      const [users] = await pool.query('SELECT id, name, email, role FROM users WHERE id = ?', [decoded.id]);
-      if (users.length === 0) {
+      const user = await User.findById(decoded.id).select('id name email role');
+      if (!user) {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
       
-      req.user = users[0];
+      req.user = user;
       next();
     } catch (error) {
       console.warn('JWT auth failed:', error.message);

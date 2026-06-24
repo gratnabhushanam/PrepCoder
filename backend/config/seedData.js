@@ -56,13 +56,14 @@ const sampleMcqs = [
 const sampleProblems = [
   {
     title: "Two Sum",
-    description: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
+    statement: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
     difficulty: "Easy",
-    category: "Arrays",
-    testCases: [
-      { input: "[2, 7, 11, 15]\n9", expected: "[0, 1]", isHidden: false },
-      { input: "[3, 2, 4]\n6", expected: "[1, 2]", isHidden: false },
-      { input: "[3, 3]\n6", expected: "[0, 1]", isHidden: true }
+    public_testcases: [
+      { input: "[2, 7, 11, 15]\n9", expected_output: "[0, 1]" },
+      { input: "[3, 2, 4]\n6", expected_output: "[1, 2]" }
+    ],
+    hidden_testcases: [
+      { input: "[3, 3]\n6", expected_output: "[0, 1]" }
     ],
     starterTemplates: {
       javascript: `// Two Sum - JavaScript
@@ -113,17 +114,18 @@ public class Solution {
     }
 }`
     },
-    companyTags: ["TCS", "Accenture", "Amazon", "Microsoft"]
+    companies: ["TCS", "Accenture", "Amazon", "Microsoft"]
   },
   {
     title: "Reverse a String",
-    description: "Write a function that reverses a string.",
+    statement: "Write a function that reverses a string.",
     difficulty: "Easy",
-    category: "Strings",
-    testCases: [
-      { input: "hello", expected: "olleh", isHidden: false },
-      { input: "OpenAI", expected: "IAnepO", isHidden: false },
-      { input: "a", expected: "a", isHidden: true }
+    public_testcases: [
+      { input: "hello", expected_output: "olleh" },
+      { input: "OpenAI", expected_output: "IAnepO" }
+    ],
+    hidden_testcases: [
+      { input: "a", expected_output: "a" }
     ],
     starterTemplates: {
       javascript: `// Reverse a String - JavaScript
@@ -150,17 +152,18 @@ public class Solution {
     }
 }`
     },
-    companyTags: ["TCS", "Infosys", "Wipro", "Cognizant"]
+    companies: ["TCS", "Infosys", "Wipro", "Cognizant"]
   },
   {
     title: "Length of Longest Substring",
-    description: "Find the length of the longest substring without repeating characters.",
+    statement: "Find the length of the longest substring without repeating characters.",
     difficulty: "Medium",
-    category: "Sliding Window",
-    testCases: [
-      { input: "abcabcbb", expected: "3", isHidden: false },
-      { input: "bbbbb", expected: "1", isHidden: false },
-      { input: "pwwkew", expected: "3", isHidden: true }
+    public_testcases: [
+      { input: "abcabcbb", expected_output: "3" },
+      { input: "bbbbb", expected_output: "1" }
+    ],
+    hidden_testcases: [
+      { input: "pwwkew", expected_output: "3" }
     ],
     starterTemplates: {
       javascript: `// Length of Longest Substring - JavaScript
@@ -208,7 +211,7 @@ public class Solution {
     }
 }`
     },
-    companyTags: ["Amazon", "Microsoft", "Flipkart"]
+    companies: ["Amazon", "Microsoft", "Flipkart"]
   }
 ];
 
@@ -310,10 +313,10 @@ async function seedDatabase(db) {
       await db.Mcq.insertMany(sampleMcqs);
     }
     
-    const probCount = await db.Problem.find({});
+    const probCount = await db.Question.find({});
     if (probCount.length === 0) {
       console.log('🌱 Seeding Coding Problem database...');
-      await db.Problem.insertMany(sampleProblems);
+      await db.Question.insertMany(sampleProblems);
     }
 
     const compCount = await db.Company.find({});

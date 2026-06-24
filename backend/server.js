@@ -29,17 +29,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Connect to Database and Seed data safely
-const { initMySQL } = require('./config/mysql');
-
 db.connectDB().then(() => {
   console.log('MongoDB connection initialized.');
   seedDatabase(db).catch(err => console.error('Seeding failed:', err));
 }).catch(err => {
   console.error('Failed to connect to MongoDB. Server running in degraded mode:', err);
 });
-
-// Initialize MySQL
-initMySQL();
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
