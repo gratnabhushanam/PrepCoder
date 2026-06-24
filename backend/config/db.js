@@ -13,7 +13,7 @@ async function connectDB() {
     await seedAdmin();
   } catch (err) {
     console.error('❌ Could not connect to MongoDB:', err.message);
-    process.exit(1);
+    console.error('⚠️ Server is running in degraded mode without database access.');
   }
 }
 

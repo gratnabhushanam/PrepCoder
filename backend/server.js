@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
   res.json({
     status: 'online',
     message: 'Placement Preparation Platform API is running.',
-    mode: db.isJSONDb() ? 'local-json' : 'mongodb'
+    mode: 'mongodb'
   });
 });
 
