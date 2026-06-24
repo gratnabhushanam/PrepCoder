@@ -201,7 +201,7 @@ public class Solution {
         String s = sc.nextLine().trim();
         Map<Character, Integer> map = new HashMap<>();
         int max = 0, start = 0;
-        for (int i = 0; i < s.length(); i++) {
+        for (let i = 0; i < s.length(); i++) {
             if (map.containsKey(s.charAt(i)))
                 start = Math.max(start, map.get(s.charAt(i)) + 1);
             map.put(s.charAt(i), i);

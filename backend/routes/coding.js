@@ -151,6 +151,7 @@ router.get('/problem/:id', protect, async (req, res) => {
       hints: question.hints || [],
       companies: question.companies || [],
       testCases: question.public_testcases || [],
+      starterTemplates: question.starterTemplates || {},
       is_solved: !!is_solved,
       last_code: lastSub ? lastSub.code : null,
       last_language: lastSub ? lastSub.language : null

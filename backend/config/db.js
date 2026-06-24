@@ -113,6 +113,13 @@ const QuestionSchema = new mongoose.Schema({
     input: { type: String, required: true },
     expected_output: { type: String, required: true }
   }],
+  starterTemplates: {
+    javascript: { type: String },
+    python: { type: String },
+    java: { type: String },
+    cpp: { type: String },
+    c: { type: String }
+  },
   companies: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

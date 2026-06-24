@@ -34,7 +34,7 @@ router.post('/questions', protect, adminOnly, async (req, res) => {
     const {
       concept_id, title, difficulty, statement, constraints,
       input_format, output_format, examples, hints, editorial, video_solution,
-      companies, public_testcases, hidden_testcases
+      companies, public_testcases, hidden_testcases, starterTemplates
     } = req.body;
 
     if (!title || !statement || !difficulty) {
@@ -55,7 +55,8 @@ router.post('/questions', protect, adminOnly, async (req, res) => {
       video_solution,
       companies: companies || [],
       public_testcases: public_testcases || [],
-      hidden_testcases: hidden_testcases || []
+      hidden_testcases: hidden_testcases || [],
+      starterTemplates: starterTemplates || {}
     });
 
     res.status(201).json({ message: 'Question uploaded successfully', id: newQuestion._id });
@@ -106,7 +107,7 @@ router.put('/questions/:id', protect, adminOnly, async (req, res) => {
     const {
       concept_id, title, difficulty, statement, constraints,
       input_format, output_format, examples, hints, editorial, video_solution,
-      companies, public_testcases, hidden_testcases, status
+      companies, public_testcases, hidden_testcases, starterTemplates, status
     } = req.body;
 
     const updatedQuestion = await Question.findByIdAndUpdate(questionId, {
@@ -125,6 +126,7 @@ router.put('/questions/:id', protect, adminOnly, async (req, res) => {
       companies: companies || [],
       public_testcases: public_testcases || [],
       hidden_testcases: hidden_testcases || [],
+      starterTemplates: starterTemplates || {},
       updatedAt: new Date()
     }, { new: true });
 
