@@ -4,13 +4,13 @@ import axios from 'axios';
 import { AppContext } from '../context/AppContext';
 
 export default function Dashboard() {
-  const { user, API_BASE } = useContext(AppContext);
+  const { user, API_BASE, token } = useContext(AppContext);
   
   const [mentorData, setMentorData] = useState(null);
   const [loadingMentor, setLoadingMentor] = useState(false);
   const [tasks, setTasks] = useState([
-    { id: 1, text: "Solve 'Two Sum' in JavaScript or Python", done: false },
-    { id: 2, text: "Complete one Java MCQ topic test", done: false },
+    { id: 1, text: "Solve a coding problem from the workspace", done: false },
+    { id: 2, text: "Complete one MCQ topic test", done: false },
     { id: 3, text: "Upload your resume to check ATS Score", done: false },
     { id: 4, text: "Perform a mock HR Interview round", done: false }
   ]);
@@ -22,10 +22,14 @@ export default function Dashboard() {
         let problemText = "Solve a coding problem from the workspace";
         
         // Fetch a real problem to solve
-        const res = await axios.get(`${API_BASE}/coding/concepts`);
+        const res = await axios.get(`${API_BASE}/coding/concepts`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (res.data && res.data.length > 0) {
           const conceptId = res.data[0]._id || res.data[0].id;
-          const probRes = await axios.get(`${API_BASE}/coding/questions?concept_id=${conceptId}&difficulty=Easy`);
+          const probRes = await axios.get(`${API_BASE}/coding/questions?concept_id=${conceptId}&difficulty=Easy`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           if (probRes.data && probRes.data.length > 0) {
             problemText = `Solve '${probRes.data[0].title}' in the workspace`;
           }
@@ -44,10 +48,10 @@ export default function Dashboard() {
       }
     };
     
-    if (user) {
+    if (user && token) {
       fetchRealTasks();
     }
-  }, [user, API_BASE]);
+  }, [user, API_BASE, token]);
 
   const toggleTask = (id) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
@@ -56,7 +60,9 @@ export default function Dashboard() {
   const generateMentorPlan = async () => {
     setLoadingMentor(true);
     try {
-      const res = await axios.get(`${API_BASE}/ai/mentor-plan`);
+      const res = await axios.get(`${API_BASE}/ai/mentor-plan`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setMentorData(res.data);
     } catch (e) {
       console.error(e);
@@ -67,7 +73,18 @@ export default function Dashboard() {
 
   if (!user) return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading user profile...</div>;
 
-  const score = user.readinessScore || 45;
+  // Calculate actual readiness score instead of fake defaults
+  let calculatedScore = 0;
+  if (user.readinessScore) {
+    calculatedScore = user.readinessScore;
+  } else {
+    if (user.solvedProblems?.length > 0) calculatedScore += 25;
+    if (user.mcqStats?.totalAttempted > 0) calculatedScore += 25;
+    if (user.resumeData?.atsScore > 0) calculatedScore += 25;
+    if (user.aiInterviewStats?.length > 0) calculatedScore += 25;
+  }
+  const score = calculatedScore;
+  
   const radius = 70;
   const circ = 2 * Math.PI * radius;
   const strokeDashoffset = circ - (score / 100) * circ;
