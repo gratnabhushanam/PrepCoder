@@ -66,6 +66,12 @@
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 50%);
+  background-attachment: fixed;
   color: var(--text-primary);
   overflow-x: hidden;
   line-height: 1.6;
@@ -89,18 +95,26 @@ button, input, select, textarea {
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  border: 3px solid var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: rgba(255, 255, 255, 0.3);
+}
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: var(--bg-primary);
+}
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
 }
 
 /* Utility Animations */
@@ -284,6 +298,10 @@ button, input, select, textarea {
   gap: 0.5rem;
 }
 
+.btn:active {
+  transform: scale(0.96);
+}
+
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   color: white;
@@ -293,6 +311,11 @@ button, input, select, textarea {
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
 
 .btn-secondary {
@@ -328,6 +351,8 @@ button, input, select, textarea {
 /* Card Components */
 .card {
   background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: 1.5rem;
@@ -340,7 +365,7 @@ button, input, select, textarea {
 .card:hover {
   transform: translateY(-4px);
   border-color: var(--border-hover);
-  box-shadow: var(--glow-shadow), 0 10px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.15), 0 10px 40px rgba(0,0,0,0.5);
 }
 
 .card-title {
@@ -634,4 +659,15 @@ tr:hover td {
   .nav-links {
     display: none; /* In a real app we'd have a menu, let's keep it simple and clean */
   }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+
+.skeleton-loader {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
 }

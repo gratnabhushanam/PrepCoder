@@ -15,7 +15,7 @@ export default function Home() {
         alignItems: 'center',
         textAlign: 'center',
         padding: '2rem 1rem',
-        background: 'radial-gradient(circle at 50% 30%, rgba(168, 85, 247, 0.08), transparent 60%)',
+        background: 'transparent',
         borderRadius: 'var(--radius-xl)',
         marginBottom: '4rem',
         minHeight: '75vh',
@@ -28,16 +28,19 @@ export default function Home() {
           alignItems: 'center',
           gap: '0.5rem',
           background: 'rgba(168, 85, 247, 0.1)',
-          border: '1px solid rgba(168, 85, 247, 0.2)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          border: '1px solid rgba(168, 85, 247, 0.3)',
           color: 'var(--color-accent)',
-          padding: '0.4rem 1rem',
+          padding: '0.5rem 1.2rem',
           borderRadius: 'var(--radius-xl)',
           fontSize: '0.85rem',
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
-          marginBottom: '1.5rem',
-          animation: 'float 3s ease-in-out infinite'
+          marginBottom: '2rem',
+          animation: 'float 3s ease-in-out infinite',
+          boxShadow: '0 4px 15px rgba(168, 85, 247, 0.15)'
         }}>
           🚀 Next-Gen Placement Preparation
         </div>
