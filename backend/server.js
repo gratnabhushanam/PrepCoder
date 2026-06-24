@@ -18,14 +18,11 @@ app.use(morgan('dev'));
 
 // Enable CORS securely
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:5173', 
-    'https://your-frontend.vercel.app',
-    'https://prep-coder.vercel.app'
-  ],
+  origin: true, // Dynamically allow the origin of the request
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
 // Body parser middleware
