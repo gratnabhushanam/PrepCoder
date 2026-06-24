@@ -1,0 +1,203 @@
+[
+  {
+    "_id": "1782197575316",
+    "name": "TCS",
+    "examPattern": {
+      "rounds": [
+        {
+          "name": "Part A: Cognitive Skills",
+          "duration": 120,
+          "description": "Numerical Ability, Verbal Ability, Reasoning Ability"
+        },
+        {
+          "name": "Part B: Programming",
+          "duration": 60,
+          "description": "Email Writing, MCQ Coding, 2 Hands-on Coding questions"
+        }
+      ],
+      "syllabus": [
+        "Quantitative Aptitude",
+        "Logical Reasoning",
+        "English/Verbal",
+        "C/C++/Java/Python Basic Programming",
+        "Data Structures"
+      ],
+      "difficulty": "Medium"
+    },
+    "previousQuestions": [
+      {
+        "question": "If the ratio of two numbers is 3:4 and their LCM is 180. Find the sum of numbers?",
+        "answer": "LCM of 3x and 4x is 12x. Therefore, 12x = 180 => x = 15. The numbers are 45 and 60. Sum is 105.",
+        "year": "2024"
+      },
+      {
+        "question": "Write a program to check if a number is a Strong Number (sum of factorials of digits equals the number).",
+        "answer": "Input: 145. Factorials: 1! + 4! + 5! = 1 + 24 + 120 = 145 (Yes).",
+        "year": "2023"
+      }
+    ],
+    "interviewExperiences": [
+      {
+        "role": "Systems Engineer",
+        "experience": "The interview was divided into TR, MR, and HR. Technical round focused on basic Java, DBMS questions, and writing a bubble sort algorithm. MR was situational-based, and HR checked background credentials and flexibility in shift timings.",
+        "author": "Pranav M.",
+        "result": "Selected",
+        "date": "Feb 2025"
+      }
+    ],
+    "technicalQuestions": [
+      {
+        "question": "What is the difference between Method Overloading and Method Overriding?",
+        "answer": "Overloading occurs in the same class with same name but different signatures (compile-time). Overriding happens in sub-classes with same signature (runtime polymorphism).",
+        "topic": "OOPs"
+      },
+      {
+        "question": "What is normalized form in SQL (1NF, 2NF, 3NF)?",
+        "answer": "1NF removes duplicate columns. 2NF removes partial dependencies. 3NF removes transitive dependencies to minimize data redundancy.",
+        "topic": "DBMS"
+      }
+    ],
+    "hrQuestions": [
+      {
+        "question": "Why TCS?",
+        "answer": "TCS is a global leader and offers an excellent platform for learning. The company's work environment, diversity, and training programs like 'TCS Initial Learning Program (ILP)' are perfect for freshers to start their careers."
+      },
+      {
+        "question": "Are you willing to relocate?",
+        "answer": "Yes, I am completely flexible to relocate to any location as it provides a great opportunity to explore new environments and gain corporate exposure."
+      }
+    ]
+  },
+  {
+    "_id": "1782197575317",
+    "name": "Infosys",
+    "examPattern": {
+      "rounds": [
+        {
+          "name": "Online Test",
+          "duration": 100,
+          "description": "Mathematical Ability, Verbal, Pseudo Code, Puzzle Solving"
+        },
+        {
+          "name": "Technical & HR Interview",
+          "duration": 30,
+          "description": "Consolidated online technical/HR interview"
+        }
+      ],
+      "syllabus": [
+        "Maths",
+        "Verbal",
+        "Data Structures",
+        "Pseudo Code reasoning"
+      ],
+      "difficulty": "Medium-Hard"
+    },
+    "previousQuestions": [
+      {
+        "question": "Solve a puzzle: 5 members of a family are traveling. Group conditions given...",
+        "answer": "See detailed reasoning solutions in Infosys puzzle templates.",
+        "year": "2024"
+      }
+    ],
+    "interviewExperiences": [
+      {
+        "role": "System Engineer Specialist",
+        "experience": "Coding question in python about string sorting. Simple SQL queries for join. Very friendly interviewer.",
+        "author": "Sunita R.",
+        "result": "Selected",
+        "date": "Jan 2025"
+      }
+    ],
+    "technicalQuestions": [
+      {
+        "question": "What are static classes in Java?",
+        "answer": "In Java, you cannot make top-level classes static. Only nested classes can be static, which means they can be instantiated without an instance of the outer class.",
+        "topic": "Java"
+      }
+    ],
+    "hrQuestions": [
+      {
+        "question": "Where do you see yourself in 5 years?",
+        "answer": "In 5 years, I see myself as a senior technical developer or team lead, possessing deep technical knowledge and helping mentor new graduates."
+      }
+    ]
+  },
+  {
+    "_id": "1782197575318",
+    "name": "Wipro",
+    "examPattern": {
+      "rounds": [
+        {
+          "name": "Wipro Elite National Talent Hunt",
+          "duration": 120,
+          "description": "Aptitude, Written English Test (Essay), Coding"
+        }
+      ],
+      "syllabus": [
+        "Quantitative",
+        "Logical",
+        "Verbal",
+        "Coding (2 questions)"
+      ],
+      "difficulty": "Medium"
+    },
+    "previousQuestions": [],
+    "interviewExperiences": [],
+    "technicalQuestions": [],
+    "hrQuestions": []
+  },
+  {
+    "_id": "1782197575319",
+    "name": "Amazon",
+    "examPattern": {
+      "rounds": [
+        {
+          "name": "Online Assessment (OA)",
+          "duration": 120,
+          "description": "2 Coding Questions + Work Simulation + Code Review"
+        },
+        {
+          "name": "Technical Interviews (3 Rounds)",
+          "duration": 180,
+          "description": "Algorithms, System Design, and Leadership Principles"
+        }
+      ],
+      "syllabus": [
+        "Arrays & Hashing",
+        "Graphs & Trees",
+        "Dynamic Programming",
+        "Object Oriented Design"
+      ],
+      "difficulty": "Hard"
+    },
+    "previousQuestions": [
+      {
+        "question": "Implement a function to find the maximum storage capacity of a grid pattern.",
+        "answer": "Use monotonic stack approach or standard sliding window algorithm.",
+        "year": "2024"
+      }
+    ],
+    "interviewExperiences": [
+      {
+        "role": "SDE-1",
+        "experience": "Deep focus on Amazon Leadership Principles like Customer Obsession and Bias for Action. Coding questions were graph-related.",
+        "author": "Amit S.",
+        "result": "Selected",
+        "date": "March 2025"
+      }
+    ],
+    "technicalQuestions": [
+      {
+        "question": "How does a Hash Map work under the hood?",
+        "answer": "It uses an array of buckets and a hash function to map keys to bucket indices. Collisions are handled using linked lists or red-black trees (Java 8+).",
+        "topic": "Data Structures"
+      }
+    ],
+    "hrQuestions": [
+      {
+        "question": "Tell me about a time you faced a difficult challenge and how you solved it.",
+        "answer": "Discuss using a STAR method (Situation, Task, Action, Result) focusing on your individual contribution."
+      }
+    ]
+  }
+]

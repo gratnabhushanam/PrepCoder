@@ -1,0 +1,64 @@
+[
+  {
+    "_id": "1782197725932",
+    "createdAt": "2026-06-23T06:55:25.932Z",
+    "readinessScore": 56,
+    "dailyStreak": 1,
+    "solvedProblems": [],
+    "mcqStats": {
+      "totalAttempted": 2,
+      "correctAnswers": 0,
+      "topicsCompleted": [
+        "Java"
+      ]
+    },
+    "aiInterviewStats": [],
+    "name": "Ratna Bhushanam",
+    "email": "ratna@prep.edu",
+    "password": "$2a$10$6EfPGSjArcQt1AoP2AxKhuS2TRu6I/kM/CHbSyInPMzoEhnif3cG6",
+    "resumeData": {
+      "atsScore": 95,
+      "skills": [
+        "React",
+        "Node",
+        "Express",
+        "SQL",
+        "MongoDB",
+        "Python",
+        "Java",
+        "Git",
+        "HTML",
+        "CSS"
+      ],
+      "missingKeywords": [
+        "JavaScript"
+      ],
+      "suggestions": [
+        "Structure your achievements using the STAR methodology (Situation, Task, Action, Result).",
+        "Add a dedicated skills summary matrix section near the top of your resume.",
+        "Explicitly list cloud platforms (e.g. AWS) or source control tools (e.g. Git) if you have used them.",
+        "Ensure standard PDF typography without complex layout columns that confuse modern ATS parsers."
+      ],
+      "uploadedAt": "2026-06-23T07:00:50.649Z"
+    }
+  },
+  {
+    "_id": "1782274394984",
+    "createdAt": "2026-06-24T04:13:14.984Z",
+    "readinessScore": 51,
+    "dailyStreak": 2,
+    "solvedProblems": [
+      "1782198637873",
+      "1782198637874"
+    ],
+    "mcqStats": {
+      "totalAttempted": 0,
+      "correctAnswers": 0,
+      "topicsCompleted": []
+    },
+    "aiInterviewStats": [],
+    "name": "sharif",
+    "email": "mannanshareef2006@gmail.com",
+    "password": "$2a$10$FFPfD96igUkasLIrMkAhBuCE5hHdWH7KCA7Hnvnbage338fpMPQ5C"
+  }
+]

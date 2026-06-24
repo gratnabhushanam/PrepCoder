@@ -1,0 +1,106 @@
+[
+  {
+    "_id": "1782198637873",
+    "title": "Two Sum",
+    "description": "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
+    "difficulty": "Easy",
+    "category": "Arrays",
+    "testCases": [
+      {
+        "input": "[2, 7, 11, 15]\n9",
+        "expected": "[0, 1]",
+        "isHidden": false
+      },
+      {
+        "input": "[3, 2, 4]\n6",
+        "expected": "[1, 2]",
+        "isHidden": false
+      },
+      {
+        "input": "[3, 3]\n6",
+        "expected": "[0, 1]",
+        "isHidden": true
+      }
+    ],
+    "starterTemplates": {
+      "javascript": "// Two Sum - JavaScript\nconst nums = JSON.parse(__readline__());\nconst target = parseInt(__readline__());\n\nfunction twoSum(nums, target) {\n    const map = new Map();\n    for (let i = 0; i < nums.length; i++) {\n        const diff = target - nums[i];\n        if (map.has(diff)) return [map.get(diff), i];\n        map.set(nums[i], i);\n    }\n    return [];\n}\n\nconsole.log(JSON.stringify(twoSum(nums, target)));",
+      "python": "# Two Sum - Python\nimport json\n\nnums = json.loads(input())\ntarget = int(input())\n\ndef two_sum(nums, target):\n    lookup = {}\n    for i, num in enumerate(nums):\n        if target - num in lookup:\n            return [lookup[target - num], i]\n        lookup[num] = i\n    return []\n\nprint(two_sum(nums, target))",
+      "java": "import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line1 = sc.nextLine();\n        int target = Integer.parseInt(sc.nextLine());\n        int[] nums = Arrays.stream(line1.replaceAll(\"[\\\\[\\\\]]\", \"\").split(\",\")).map(String::trim).mapToInt(Integer::parseInt).toArray();\n        Map<Integer, Integer> map = new HashMap<>();\n        for(int i=0; i<nums.length; i++) {\n            if(map.containsKey(target - nums[i])) {\n                System.out.println(\"[\" + map.get(target - nums[i]) + \", \" + i + \"]\");\n                return;\n            }\n            map.put(nums[i], i);\n        }\n    }\n}"
+    },
+    "companyTags": [
+      "TCS",
+      "Accenture",
+      "Amazon",
+      "Microsoft"
+    ]
+  },
+  {
+    "_id": "1782198637874",
+    "title": "Reverse a String",
+    "description": "Write a function that reverses a string.",
+    "difficulty": "Easy",
+    "category": "Strings",
+    "testCases": [
+      {
+        "input": "hello",
+        "expected": "olleh",
+        "isHidden": false
+      },
+      {
+        "input": "OpenAI",
+        "expected": "IAnepO",
+        "isHidden": false
+      },
+      {
+        "input": "a",
+        "expected": "a",
+        "isHidden": true
+      }
+    ],
+    "starterTemplates": {
+      "javascript": "// Reverse a String - JavaScript\nconst s = __readline__();\n\nfunction reverseString(s) {\n    return s.split('').reverse().join('');\n}\n\nconsole.log(reverseString(s));",
+      "python": "# Reverse a String - Python\ns = input()\n\ndef reverse_string(s):\n    return s[::-1]\n\nprint(reverse_string(s))",
+      "java": "import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.nextLine().trim();\n        System.out.println(new StringBuilder(s).reverse().toString());\n    }\n}"
+    },
+    "companyTags": [
+      "TCS",
+      "Infosys",
+      "Wipro",
+      "Cognizant"
+    ]
+  },
+  {
+    "_id": "1782198637875",
+    "title": "Length of Longest Substring",
+    "description": "Find the length of the longest substring without repeating characters.",
+    "difficulty": "Medium",
+    "category": "Sliding Window",
+    "testCases": [
+      {
+        "input": "abcabcbb",
+        "expected": "3",
+        "isHidden": false
+      },
+      {
+        "input": "bbbbb",
+        "expected": "1",
+        "isHidden": false
+      },
+      {
+        "input": "pwwkew",
+        "expected": "3",
+        "isHidden": true
+      }
+    ],
+    "starterTemplates": {
+      "javascript": "// Length of Longest Substring - JavaScript\nconst s = __readline__();\n\nfunction lengthOfLongestSubstring(s) {\n    let map = new Map(), max = 0, start = 0;\n    for (let i = 0; i < s.length; i++) {\n        if (map.has(s[i])) start = Math.max(start, map.get(s[i]) + 1);\n        map.set(s[i], i);\n        max = Math.max(max, i - start + 1);\n    }\n    return max;\n}\n\nconsole.log(lengthOfLongestSubstring(s));",
+      "python": "# Length of Longest Substring - Python\ns = input()\n\ndef length_of_longest_substring(s):\n    used, start, max_len = {}, 0, 0\n    for i, c in enumerate(s):\n        if c in used and start <= used[c]:\n            start = used[c] + 1\n        else:\n            max_len = max(max_len, i - start + 1)\n        used[c] = i\n    return max_len\n\nprint(length_of_longest_substring(s))",
+      "java": "import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.nextLine().trim();\n        Map<Character, Integer> map = new HashMap<>();\n        int max = 0, start = 0;\n        for (int i = 0; i < s.length(); i++) {\n            if (map.containsKey(s.charAt(i)))\n                start = Math.max(start, map.get(s.charAt(i)) + 1);\n            map.put(s.charAt(i), i);\n            max = Math.max(max, i - start + 1);\n        }\n        System.out.println(max);\n    }\n}"
+    },
+    "companyTags": [
+      "Amazon",
+      "Microsoft",
+      "Flipkart"
+    ]
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "_id": "1782274431373",
+    "submittedAt": "2026-06-24T04:13:51.373Z",
+    "userId": "1782274394984",
+    "userName": "sharif",
+    "problemId": "1782198637873",
+    "problemTitle": "Two Sum",
+    "code": "# Two Sum - Python\nimport json\n\nnums = json.loads(input())\ntarget = int(input())\n\ndef two_sum(nums, target):\n    lookup = {}\n    for i, num in enumerate(nums):\n        if target - num in lookup:\n            return [lookup[target - num], i]\n        lookup[num] = i\n    return []\n\nprint(two_sum(nums, target))",
+    "language": "python",
+    "status": "Accepted",
+    "passedCases": 3,
+    "totalCases": 3,
+    "executionTime": 72
+  },
+  {
+    "_id": "1782274469536",
+    "submittedAt": "2026-06-24T04:14:29.536Z",
+    "userId": "1782274394984",
+    "userName": "sharif",
+    "problemId": "1782198637874",
+    "problemTitle": "Reverse a String",
+    "code": "# Reverse a String - Python\ns = input()\n\ndef reverse_string(s):\n    return s[::-1]\n\nprint(reverse_string(s))",
+    "language": "python",
+    "status": "Accepted",
+    "passedCases": 3,
+    "totalCases": 3,
+    "executionTime": 23
+  }
+]
