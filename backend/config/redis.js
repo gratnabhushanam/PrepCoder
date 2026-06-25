@@ -7,9 +7,17 @@ const redisClient = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379',
   retryStrategy: () => null
 });
 
+let hasLoggedRedisError = false;
+
 redisClient.on('error', (err) => {
-  console.error('❌ Redis Connection Error:', err.message);
-  console.warn('⚠️ Leaderboard and caching features require Redis to be running.');
+  if (err.code === 'ECONNREFUSED') {
+    if (!hasLoggedRedisError) {
+      console.warn('⚠️ Redis not detected. Proceeding with MongoDB fallback for Leaderboard.');
+      hasLoggedRedisError = true;
+    }
+  } else {
+    console.error('❌ Redis Error:', err.message);
+  }
 });
 
 redisClient.on('connect', () => {
