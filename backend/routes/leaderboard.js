@@ -19,10 +19,10 @@ router.get('/', async (req, res) => {
     
     if (topRedisIds && topRedisIds.length > 0) {
       // 2a. If Redis has data, fetch those specific users from MongoDB
-      statsList = await UserStats.find({ userId: { $in: topRedisIds } }).lean();
+      statsList = await UserStats.find({ userId: { $in: topRedisIds } }).populate('userId', 'name role').lean();
     } else {
       // 2b. If Redis is empty (cache miss or uninitialized), fetch top from Mongo directly
-      statsList = await UserStats.find().populate('userId', 'name').sort({ totalPoints: -1 }).limit(100).lean();
+      statsList = await UserStats.find().populate('userId', 'name role').sort({ totalPoints: -1 }).limit(100).lean();
       
       // Async rebuild Redis in background
       if (statsList.length > 0) {
@@ -33,6 +33,9 @@ router.get('/', async (req, res) => {
         pipeline.exec();
       }
     }
+
+    // Filter out admins from the leaderboard
+    statsList = statsList.filter(s => !(s.userId && s.userId.role === 'admin'));
 
     // 3. Sort strictly in JS for tie-breakers
     statsList.sort((a, b) => {
