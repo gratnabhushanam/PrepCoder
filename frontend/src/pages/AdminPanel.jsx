@@ -6,13 +6,14 @@ import AdminSidebar from '../components/Admin/AdminSidebar';
 import UsersManagement from '../components/Admin/UsersManagement';
 import SubmissionsManagement from '../components/Admin/SubmissionsManagement';
 import RealTimeAnalytics from '../components/Admin/RealTimeAnalytics';
+import SettingsManagement from '../components/Admin/SettingsManagement';
 
 export default function AdminPanel() {
   const { API_BASE, user, token } = useContext(AppContext);
 
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, add_concept, add_prob, add_mcq, manage_questions
+  const [activeTab, setActiveTab] = useState('overview'); // overview, add_concept, add_prob, add_mcq, manage_questions, settings
 
   // Add Concept states
   const [conceptName, setConceptName] = useState('');
@@ -236,7 +237,7 @@ export default function AdminPanel() {
         <div>
           <div className="grid-4" style={{ marginBottom: '2.5rem' }}>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalProblems}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalQuestions}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Total Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
@@ -498,12 +499,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {['settings'].includes(activeTab) && (
-        <div className="card">
-          <h3 className="card-title">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>This feature is coming soon.</p>
-        </div>
-      )}
+      {activeTab === 'settings' && <SettingsManagement />}
       
       {activeTab === 'users' && <UsersManagement />}
       {activeTab === 'submissions' && <SubmissionsManagement />}
