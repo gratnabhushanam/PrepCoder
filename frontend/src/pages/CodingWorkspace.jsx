@@ -31,15 +31,8 @@ export default function CodingWorkspace() {
 
   // Change starter code when language changes
   const handleLanguageChange = (newLang) => {
-    if (code && !Object.values(defaultTemplates).includes(code)) {
-      if (window.confirm('Switching languages will replace your current code with the default template. Are you sure?')) {
-        setCode(defaultTemplates[newLang] || '');
-        setLanguage(newLang);
-      }
-    } else {
-      setCode(defaultTemplates[newLang] || '');
-      setLanguage(newLang);
-    }
+    setCode(defaultTemplates[newLang] || '');
+    setLanguage(newLang);
   };
 
   // Load single problem details
