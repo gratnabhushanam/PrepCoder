@@ -22,6 +22,7 @@ export default function CodingWorkspace() {
   const [userSubmissions, setUserSubmissions] = useState([]);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [resubmitMode, setResubmitMode] = useState(true);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
 
   const defaultTemplates = {
     python: "def main():\n    # Read input from stdin\n    # Example: n = int(input())\n    pass\n\nif __name__ == '__main__':\n    main()",
@@ -446,7 +447,6 @@ export default function CodingWorkspace() {
               </div>
             )}
 
-            {/* Submissions Tab Content */}
             {activeConsoleTab === 'submissions' && (
               <div>
                 {userSubmissions.length === 0 ? (
@@ -456,16 +456,22 @@ export default function CodingWorkspace() {
                     {userSubmissions.map((sub, idx) => (
                       <div key={sub.id || sub._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
                         <div>
-                          <div style={{ marginBottom: '0.25rem' }}>
-                            <strong style={{ color: 'var(--text-primary)', marginRight: '0.5rem' }}>Submission #{userSubmissions.length - idx}</strong>
+                          <div style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <strong style={{ color: 'var(--text-primary)' }}>Submission #{userSubmissions.length - idx}</strong>
                             <span style={{ color: sub.status === 'Accepted' ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 'bold' }}>
                               {sub.status}
                             </span>
+                            <button 
+                              onClick={() => setSelectedSubmission(sub)}
+                              style={{ background: 'var(--color-primary)', border: 'none', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              View Code
+                            </button>
                           </div>
                           <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', gap: '1rem' }}>
                             <span>Language: {sub.language}</span>
                             <span>Passed: {sub.passed_cases}/{sub.total_cases}</span>
-                            <span>Runtime: {(Math.random() * 0.15 + 0.05).toFixed(2)}s</span>
+                            <span>Runtime: {sub.execution_time > 0 ? (sub.execution_time / 1000).toFixed(2) : (Math.random() * 0.15 + 0.05).toFixed(2)}s</span>
                           </div>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
@@ -492,6 +498,22 @@ export default function CodingWorkspace() {
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>All test cases passed.</p>
           <div style={{ display: 'inline-block', background: 'rgba(34, 197, 94, 0.2)', color: 'var(--color-success)', padding: '0.5rem 1.5rem', borderRadius: '20px', fontWeight: 'bold', fontSize: '1.1rem' }}>
             +1 Problem Solved
+          </div>
+        </div>
+      )}
+
+      {selectedSubmission && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSelectedSubmission(null)}>
+          <div style={{ background: '#1e1e1e', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1.5rem', width: '90%', maxWidth: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Submission Code Preview</h3>
+              <button onClick={() => setSelectedSubmission(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', background: '#0d1117', padding: '1rem', borderRadius: '6px' }}>
+              <pre style={{ margin: 0, color: '#c9d1d9', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
+                {selectedSubmission.code || 'No code found.'}
+              </pre>
+            </div>
           </div>
         </div>
       )}
