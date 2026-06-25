@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 import { Save, Server, Shield, Bell } from 'lucide-react';
+import { AppContext } from '../../context/AppContext';
 
 export default function SettingsManagement() {
+  const { API_BASE, token } = useContext(AppContext);
   const [settings, setSettings] = useState({
     platformName: 'PrepAI',
     maintenanceMode: false,
@@ -10,28 +13,43 @@ export default function SettingsManagement() {
     emailNotifications: true,
   });
 
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Load from local storage for now since there's no backend settings model
+  // Load from backend API
   useEffect(() => {
-    const saved = localStorage.getItem('adminSettings');
-    if (saved) {
+    const fetchSettings = async () => {
       try {
-        setSettings(JSON.parse(saved));
-      } catch (e) {}
-    }
-  }, []);
+        const res = await axios.get(`${API_BASE}/admin/settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data) setSettings(res.data);
+      } catch (e) {
+        console.error('Failed to load settings', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, [API_BASE, token]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => {
-      localStorage.setItem('adminSettings', JSON.stringify(settings));
+    try {
+      await axios.put(`${API_BASE}/admin/settings`, settings, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage('✅ Settings saved successfully to Database!');
+    } catch (e) {
+      setMessage('❌ Failed to save settings.');
+    } finally {
       setSaving(false);
-      setMessage('Settings saved successfully!');
       setTimeout(() => setMessage(''), 3000);
-    }, 800);
+    }
   };
+
+  if (loading) return <div>Loading settings...</div>;
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease' }}>

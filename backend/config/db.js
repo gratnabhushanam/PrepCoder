@@ -238,6 +238,18 @@ const McqAttempt = mongoose.models.McqAttempt || mongoose.model('McqAttempt', Mc
 // 8. UserStats
 const UserStats = require('../models/UserStats');
 
+// 9. PlatformSettings
+const PlatformSettingsSchema = new mongoose.Schema({
+  platformName: { type: String, default: 'PrepAI' },
+  maintenanceMode: { type: Boolean, default: false },
+  allowSignups: { type: Boolean, default: true },
+  defaultTheme: { type: String, default: 'dark' },
+  emailNotifications: { type: Boolean, default: true },
+});
+PlatformSettingsSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
+const PlatformSettings = mongoose.models.PlatformSettings || mongoose.model('PlatformSettings', PlatformSettingsSchema);
+
+
 // Admin Seeder
 async function seedAdmin() {
   try {
@@ -270,5 +282,6 @@ module.exports = {
   Mcq,
   Company,
   McqAttempt,
-  UserStats
+  UserStats,
+  PlatformSettings
 };

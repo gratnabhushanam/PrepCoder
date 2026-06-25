@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Mcq, Question, Submission, Company } = require('../config/db');
+const { User, Mcq, Question, Submission, Company, PlatformSettings } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 
 // @route   GET /api/admin/analytics
@@ -319,6 +319,45 @@ router.get('/submissions', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch submissions' });
+  }
+});
+
+// @route   GET /api/admin/settings
+// @desc    Get platform settings
+router.get('/settings', protect, async (req, res) => {
+  try {
+    let settings = await PlatformSettings.findOne();
+    if (!settings) {
+      settings = await PlatformSettings.create({});
+    }
+    res.json(settings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// @route   PUT /api/admin/settings
+// @desc    Update platform settings
+router.put('/settings', protect, async (req, res) => {
+  try {
+    const { platformName, maintenanceMode, allowSignups, defaultTheme, emailNotifications } = req.body;
+    let settings = await PlatformSettings.findOne();
+    if (!settings) {
+      settings = new PlatformSettings({});
+    }
+    
+    if (platformName !== undefined) settings.platformName = platformName;
+    if (maintenanceMode !== undefined) settings.maintenanceMode = maintenanceMode;
+    if (allowSignups !== undefined) settings.allowSignups = allowSignups;
+    if (defaultTheme !== undefined) settings.defaultTheme = defaultTheme;
+    if (emailNotifications !== undefined) settings.emailNotifications = emailNotifications;
+
+    await settings.save();
+    res.json(settings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
   }
 });
 
