@@ -7,8 +7,13 @@ const redisClient = require('../config/redis');
 // @desc    Get real-time global leaderboard
 router.get('/', async (req, res) => {
   try {
-    // 1. Fetch top 100 from Redis
-    const topRedisIds = await redisClient.zrevrange('leaderboard:global', 0, 99);
+    let topRedisIds = [];
+    try {
+      // 1. Fetch top 100 from Redis
+      topRedisIds = await redisClient.zrevrange('leaderboard:global', 0, 99);
+    } catch (redisErr) {
+      console.warn('Redis unavailable, falling back to MongoDB for leaderboard.');
+    }
     
     let statsList = [];
     

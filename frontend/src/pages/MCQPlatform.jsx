@@ -200,8 +200,8 @@ export default function MCQPlatform() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    <span>⭐ Points: <strong style={{ color: 'var(--text-primary)' }}>{item.totalPoints.toLocaleString()}</strong></span>
-                    <span>📈 Readiness: <strong style={{ color: 'var(--color-accent)' }}>{item.readinessScore}%</strong></span>
+                    <span>⭐ Points: <strong style={{ color: 'var(--text-primary)' }}>{(item.totalPoints || 0).toLocaleString()}</strong></span>
+                    <span>📈 Readiness: <strong style={{ color: 'var(--color-accent)' }}>{item.readinessScore || 0}%</strong></span>
                   </div>
                 </div>
               );
