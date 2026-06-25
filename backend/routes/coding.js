@@ -208,9 +208,24 @@ router.post('/submit', protect, async (req, res) => {
     const results = await executeCode('Submission', language, code, allCases);
     
     const totalCases = allCases.length;
-    const passedCases = results.filter(r => r.status === 'Accepted').length;
+    const passedCases = results.filter(r => r.passed).length;
     const isAccepted = passedCases === totalCases;
-    const finalVerdict = isAccepted ? 'Accepted' : (results.find(r => r.status !== 'Accepted')?.status || 'Wrong Answer');
+    
+    let finalVerdict = 'Accepted';
+    if (!isAccepted) {
+      const firstFailed = results.find(r => !r.passed);
+      if (firstFailed?.error) {
+        if (firstFailed.error.includes('Time Limit Exceeded') || firstFailed.error.includes('timed out')) {
+          finalVerdict = 'Time Limit Exceeded';
+        } else if (firstFailed.error.includes('Compilation Error')) {
+          finalVerdict = 'Compilation Error';
+        } else {
+          finalVerdict = 'Runtime Error';
+        }
+      } else {
+        finalVerdict = 'Wrong Answer';
+      }
+    }
 
     // Save Submission
     const submission = new Submission({
