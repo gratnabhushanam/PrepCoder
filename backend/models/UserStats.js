@@ -17,7 +17,6 @@ const UserStatsSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-UserStatsSchema.index({ userId: 1 });
 UserStatsSchema.index({ totalPoints: -1 });
 
 UserStatsSchema.set('toJSON', {
