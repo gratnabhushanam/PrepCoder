@@ -23,6 +23,19 @@ export default function CodingWorkspace() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [resubmitMode, setResubmitMode] = useState(true);
 
+  const defaultTemplates = {
+    python: "def main():\n    # Read input from stdin\n    # Example: n = int(input())\n    pass\n\nif __name__ == '__main__':\n    main()",
+    javascript: "// The platform automatically injects __INPUT_LINES__ and __readline__()\n// Example: const n = parseInt(__readline__(), 10);\n\nfunction solve() {\n  \n}\nsolve();",
+    java: "import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        // Read input using scanner.nextLine(), etc.\n        \n    }\n}"
+  };
+
+  // Change starter code when language changes
+  useEffect(() => {
+    if (!code || Object.values(defaultTemplates).includes(code)) {
+      setCode(defaultTemplates[language] || '');
+    }
+  }, [language]);
+
   // Load single problem details
   useEffect(() => {
     if (id) {
@@ -36,6 +49,8 @@ export default function CodingWorkspace() {
           setResubmitMode(!res.data.is_solved);
           if (res.data.last_code) {
             setCode(res.data.last_code);
+          } else {
+            setCode(defaultTemplates[res.data.last_language || 'python']);
           }
           if (res.data.last_language) {
             setLanguage(res.data.last_language);
