@@ -205,8 +205,8 @@ export default function CodingWorkspace() {
             {problem.testCases?.map((tc, idx) => (
               <div key={idx} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem', fontSize: '0.85rem', height: 'auto', overflow: 'visible' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)', fontSize: '0.95rem' }}>Example {idx + 1}</div>
-                <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-muted)' }}>Input:</strong> <br/><code style={{ color: 'var(--color-accent)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{tc.input}</code></div>
-                <div><strong style={{ color: 'var(--text-muted)' }}>Output:</strong> <br/><code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{tc.expected_output || tc.expected}</code></div>
+                <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-muted)' }}>Input:</strong> <br/><code style={{ color: 'var(--color-accent)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', marginTop: '0.25rem' }}>{tc.input}</code></div>
+                <div><strong style={{ color: 'var(--text-muted)' }}>Output:</strong> <br/><code style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', marginTop: '0.25rem' }}>{tc.expected_output || tc.expected || tc.expectedOutput || tc.output}</code></div>
               </div>
             ))}
           </div>
