@@ -30,11 +30,17 @@ export default function CodingWorkspace() {
   };
 
   // Change starter code when language changes
-  useEffect(() => {
-    if (!code || Object.values(defaultTemplates).includes(code)) {
-      setCode(defaultTemplates[language] || '');
+  const handleLanguageChange = (newLang) => {
+    if (code && !Object.values(defaultTemplates).includes(code)) {
+      if (window.confirm('Switching languages will replace your current code with the default template. Are you sure?')) {
+        setCode(defaultTemplates[newLang] || '');
+        setLanguage(newLang);
+      }
+    } else {
+      setCode(defaultTemplates[newLang] || '');
+      setLanguage(newLang);
     }
-  }, [language]);
+  };
 
   // Load single problem details
   useEffect(() => {
@@ -247,7 +253,7 @@ export default function CodingWorkspace() {
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Language:</span>
               <select 
                 value={language} 
-                onChange={(e) => setLanguage(e.target.value)}
+                onChange={(e) => handleLanguageChange(e.target.value)}
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', padding: '0.2rem 0.5rem', cursor: 'pointer', outline: 'none' }}
               >
                 <option value="python">Python 3</option>

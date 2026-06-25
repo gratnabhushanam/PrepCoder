@@ -9,11 +9,20 @@ export default function Profile() {
     return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Please log in to view your profile settings.</div>;
   }
 
-  const readinessScore = user.readinessScore || 0;
+  // Dynamic Performance Calculations
   const problemsSolved = user.solvedProblems?.length || 0;
   const totalMcq = user.mcqStats?.totalAttempted || 0;
   const mcqCorrect = user.mcqStats?.correctAnswers || 0;
   const mcqAccuracy = totalMcq === 0 ? 0 : Math.round((mcqCorrect / totalMcq) * 100);
+  
+  // Calculate a true Readiness Score (Max 100%)
+  // Algorithm weight: max 50 points (requires 20 solved)
+  // MCQ weight: max 50 points (mcqAccuracy / 2)
+  const algoScore = Math.min((problemsSolved / 20) * 50, 50);
+  const mcqScore = mcqAccuracy / 2;
+  const streakBonus = user.dailyStreak > 5 ? 5 : 0;
+  
+  const readinessScore = Math.min(Math.round(algoScore + mcqScore + streakBonus), 100);
 
   // Helper to generate circular progress SVG
   const CircularProgress = ({ percent, color, label, icon }) => {
