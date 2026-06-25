@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
       statsList = await UserStats.find({ userId: { $in: topRedisIds } }).lean();
     } else {
       // 2b. If Redis is empty (cache miss or uninitialized), fetch top from Mongo directly
-      statsList = await UserStats.find().sort({ totalPoints: -1 }).limit(100).lean();
+      statsList = await UserStats.find().populate('userId', 'name').sort({ totalPoints: -1 }).limit(100).lean();
       
       // Async rebuild Redis in background
       if (statsList.length > 0) {
@@ -51,14 +51,17 @@ router.get('/', async (req, res) => {
     });
 
     // 4. Format Top 10 response
-    const top10 = statsList.slice(0, 10).map((s, index) => ({
-      rank: index + 1,
-      userId: s.userId.toString(),
-      username: s.username || 'Anonymous',
-      profileImage: s.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=Anonymous`,
-      readinessScore: s.readinessScore || 0,
-      totalPoints: s.totalPoints || 0
-    }));
+    const top10 = statsList.slice(0, 10).map((s, index) => {
+      const actualName = s.username || (s.userId && s.userId.name) || 'Anonymous';
+      return {
+        rank: index + 1,
+        userId: s.userId._id ? s.userId._id.toString() : s.userId.toString(),
+        username: actualName,
+        profileImage: s.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(actualName)}`,
+        readinessScore: s.readinessScore || 0,
+        totalPoints: s.totalPoints || 0
+      };
+    });
 
     res.json(top10);
   } catch (error) {

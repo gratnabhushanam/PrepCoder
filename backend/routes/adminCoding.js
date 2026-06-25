@@ -152,6 +152,13 @@ router.delete('/questions/:id', protect, adminOnly, async (req, res) => {
       { solvedProblems: questionId },
       { $pull: { solvedProblems: questionId } }
     );
+    const { UserStats } = require('../config/db');
+    if (UserStats) {
+      await UserStats.updateMany(
+        { solvedProblems: questionId },
+        { $pull: { solvedProblems: questionId } }
+      );
+    }
     
     res.json({ message: 'Question deleted successfully and user stats updated' });
   } catch (error) {

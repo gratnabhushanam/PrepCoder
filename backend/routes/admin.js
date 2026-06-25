@@ -184,6 +184,20 @@ router.put('/mcqs/:id', protect, async (req, res) => {
 router.delete('/mcqs/:id', protect, async (req, res) => {
   try {
     await Mcq.findByIdAndUpdate(req.params.id, { isDeleted: true });
+
+    // Decrease mcqsPracticed for users who attempted this
+    const { McqAttempt, UserStats } = require('../config/db');
+    if (McqAttempt && UserStats) {
+       const attempts = await McqAttempt.find({ mcqId: req.params.id });
+       const userIds = [...new Set(attempts.map(a => a.userId.toString()))];
+       if (userIds.length > 0) {
+         await UserStats.updateMany(
+           { userId: { $in: userIds }, mcqsPracticed: { $gt: 0 } },
+           { $inc: { mcqsPracticed: -1 } }
+         );
+       }
+    }
+
     res.json({ message: 'MCQ deleted successfully' });
   } catch (error) {
     console.error(error);
@@ -241,6 +255,70 @@ router.post('/companies', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to create company profile' });
+  }
+});
+// ==========================================
+// USER MANAGEMENT ENDPOINTS
+// ==========================================
+
+// @route   GET /api/admin/users
+// @desc    Get all users
+router.get('/users', protect, async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+// @route   DELETE /api/admin/users/:id
+// @desc    Delete a user completely
+router.delete('/users/:id', protect, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    await Submission.deleteMany({ user_id: req.params.id });
+    const { McqAttempt } = require('../config/db');
+    if (McqAttempt) await McqAttempt.deleteMany({ userId: req.params.id });
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+// @route   PUT /api/admin/users/:id/role
+// @desc    Update a user's role (Promote/Demote)
+router.put('/users/:id/role', protect, async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!['admin', 'user'].includes(role)) return res.status(400).json({ message: 'Invalid role' });
+    const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update user role' });
+  }
+});
+
+// ==========================================
+// SUBMISSIONS ENDPOINT
+// ==========================================
+
+// @route   GET /api/admin/submissions
+// @desc    Get all submissions across platform
+router.get('/submissions', protect, async (req, res) => {
+  try {
+    const submissions = await Submission.find({})
+      .populate('user_id', 'name email')
+      .populate('question_id', 'title')
+      .sort({ submitted_at: -1 })
+      .limit(200); // limit for performance
+    res.json(submissions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch submissions' });
   }
 });
 

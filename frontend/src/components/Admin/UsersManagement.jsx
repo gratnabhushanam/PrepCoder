@@ -9,6 +9,8 @@ export default function UsersManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userSubmissions, setUserSubmissions] = useState([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -107,7 +109,18 @@ export default function UsersManagement() {
                   {new Date(u.createdAt).toLocaleDateString()}
                 </td>
                 <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setSelectedUser(u)} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }} title="View Details">
+                  <button onClick={async () => {
+                    setSelectedUser(u);
+                    setLoadingSubs(true);
+                    try {
+                      const res = await axios.get(`${API_BASE}/admin/submissions`, { headers: { Authorization: `Bearer ${token}` } });
+                      const uid = u._id || u.id;
+                      setUserSubmissions(res.data.filter(s => (s.user_id && (s.user_id._id === uid || s.user_id.id === uid))));
+                    } catch (e) {
+                      console.error('Failed to load subs', e);
+                    }
+                    setLoadingSubs(false);
+                  }} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }} title="View Details">
                     <Eye size={16} />
                   </button>
                   <button onClick={() => handleRoleChange(u._id || u.id, u.role)} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: u.role === 'admin' ? 'var(--color-warning)' : 'var(--color-primary)', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }} title={u.role === 'admin' ? "Demote to User" : "Promote to Admin"}>
@@ -138,6 +151,27 @@ export default function UsersManagement() {
               <div><span style={{ color: 'var(--text-secondary)', display: 'inline-block', width: '150px' }}>Current Streak:</span> <strong>{selectedUser.dailyStreak || 0} days</strong></div>
               <div><span style={{ color: 'var(--text-secondary)', display: 'inline-block', width: '150px' }}>Placement Readiness:</span> <strong>{selectedUser.readinessScore || 0}%</strong></div>
             </div>
+            
+            <div style={{ marginTop: '1.5rem', maxHeight: '200px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>Recent Submissions</h4>
+              {loadingSubs ? (
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Loading submissions...</div>
+              ) : userSubmissions.length === 0 ? (
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>No recent submissions found.</div>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.9rem' }}>
+                  {userSubmissions.slice(0, 10).map((sub, i) => (
+                    <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: i === userSubmissions.slice(0,10).length - 1 ? 'none' : '1px solid var(--border-color)' }}>
+                      <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }} title={sub.question_id?.title}>
+                        {sub.question_id?.title || 'Unknown Problem'}
+                      </span>
+                      <span style={{ fontWeight: 'bold', color: sub.status === 'Accepted' ? 'var(--color-success)' : 'var(--color-danger)' }}>{sub.status}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <button onClick={() => setSelectedUser(null)} style={{ marginTop: '2rem', width: '100%', padding: '0.75rem', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Close</button>
           </div>
         </div>
