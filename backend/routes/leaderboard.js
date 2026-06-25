@@ -1,45 +1,64 @@
 const express = require('express');
 const router = express.Router();
-const { UserStats, User } = require('../config/db');
+const { UserStats } = require('../config/db');
+const redisClient = require('../config/redis');
 
 // @route   GET /api/leaderboard
-// @desc    Get global leaderboard from DB directly (Redis disabled temporarily)
+// @desc    Get real-time global leaderboard
 router.get('/', async (req, res) => {
   try {
-    const allStats = await UserStats.find({}).sort({ totalPoints: -1 }).limit(50);
+    // 1. Fetch top 100 from Redis
+    const topRedisIds = await redisClient.zrevrange('leaderboard:global', 0, 99);
     
-    // 3. Populate user details
-    const populated = await Promise.all(allStats.map(async (entry, index) => {
-      let user = await User.findById(entry.userId).select('name');
+    let statsList = [];
+    
+    if (topRedisIds && topRedisIds.length > 0) {
+      // 2a. If Redis has data, fetch those specific users from MongoDB
+      statsList = await UserStats.find({ userId: { $in: topRedisIds } }).lean();
+    } else {
+      // 2b. If Redis is empty (cache miss or uninitialized), fetch top from Mongo directly
+      statsList = await UserStats.find().sort({ totalPoints: -1 }).limit(100).lean();
       
-      return {
-        rank: index + 1,
-        userId: entry.userId,
-        name: user ? user.name : 'Unknown User',
-        points: entry.totalPoints
-      };
+      // Async rebuild Redis in background
+      if (statsList.length > 0) {
+        const pipeline = redisClient.pipeline();
+        statsList.forEach(s => {
+          pipeline.zadd('leaderboard:global', s.totalPoints, s.userId.toString());
+        });
+        pipeline.exec();
+      }
+    }
+
+    // 3. Sort strictly in JS for tie-breakers
+    statsList.sort((a, b) => {
+      // Total Points DESC
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      // Readiness Score DESC
+      if (b.readinessScore !== a.readinessScore) return b.readinessScore - a.readinessScore;
+      // Problems Solved DESC
+      const aSolved = a.solvedProblems ? a.solvedProblems.length : 0;
+      const bSolved = b.solvedProblems ? b.solvedProblems.length : 0;
+      if (bSolved !== aSolved) return bSolved - aSolved;
+      // MCQ Score DESC
+      const aMcq = a.mcqScore || 0;
+      const bMcq = b.mcqScore || 0;
+      return bMcq - aMcq;
+    });
+
+    // 4. Format Top 10 response
+    const top10 = statsList.slice(0, 10).map((s, index) => ({
+      rank: index + 1,
+      userId: s.userId.toString(),
+      username: s.username || 'Anonymous',
+      profileImage: s.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=Anonymous`,
+      readinessScore: s.readinessScore || 0,
+      totalPoints: s.totalPoints || 0
     }));
 
-    res.json(populated);
-
+    res.json(top10);
   } catch (error) {
     console.error('Leaderboard Error:', error);
     res.status(500).json({ message: 'Server Error' });
-  }
-});
-
-// Sync leaderboard explicitly endpoint (Internal use)
-router.post('/sync', async (req, res) => {
-  try {
-    const allStats = await UserStats.find({}).select('userId totalPoints');
-    const pipeline = redisClient.pipeline();
-    allStats.forEach(stat => {
-      pipeline.zadd('leaderboard:global', stat.totalPoints, stat.userId.toString());
-    });
-    await pipeline.exec();
-    res.json({ message: 'Leaderboard synced successfully.' });
-  } catch (error) {
-    res.status(500).json({ message: 'Sync failed' });
   }
 });
 

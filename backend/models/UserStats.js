@@ -2,8 +2,11 @@ const mongoose = require('mongoose');
 
 const UserStatsSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  username: { type: String },
+  profileImage: { type: String },
   solvedProblems: [{ type: String }],
   mcqsPracticed: { type: Number, default: 0 },
+  mcqScore: { type: Number, default: 0 },
   atsScore: { type: Number, default: 0 },
   currentStreak: { type: Number, default: 0 },
   longestStreak: { type: Number, default: 0 },

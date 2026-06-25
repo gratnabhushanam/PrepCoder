@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import useSWR from 'swr';
 import { AppContext } from '../context/AppContext';
+
+const fetcher = url => axios.get(url).then(res => res.data);
 
 export default function MCQPlatform() {
   const { topic } = useParams();
@@ -9,8 +12,11 @@ export default function MCQPlatform() {
   const { API_BASE, user, setUser } = useContext(AppContext);
 
   const [topics, setTopics] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Real-time Leaderboard polling with SWR (updates every 5 seconds without page refresh)
+  const { data: leaderboardData, error: leaderboardError } = useSWR(`${API_BASE}/leaderboard`, fetcher, { refreshInterval: 5000 });
+  const leaderboard = leaderboardData || [];
 
   // Active quiz states
   const [questions, setQuestions] = useState([]);
@@ -21,15 +27,12 @@ export default function MCQPlatform() {
   const [score, setScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch topics and leaderboard on mount
+  // Fetch topics on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         const topicsRes = await axios.get(`${API_BASE}/practice/topics`);
         setTopics(topicsRes.data);
-        
-        const leadRes = await axios.get(`${API_BASE}/practice/leaderboard`);
-        setLeaderboard(leadRes.data);
       } catch (err) {
         console.error('Failed to load MCQs homepage:', err);
       } finally {
@@ -163,24 +166,53 @@ export default function MCQPlatform() {
 
         {/* Right Side: Leaderboard Panel */}
         <div className="card" style={{ height: 'fit-content' }}>
-          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>🏆</span> Leaderboard
+          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+            <span>🏆</span> Global Leaderboard
           </h3>
-          <p className="card-desc" style={{ marginBottom: '1.5rem' }}>Top students based on Placement Readiness rating.</p>
+          <p className="card-desc" style={{ marginBottom: '1.5rem', fontSize: '0.85rem' }}>Top students based on Total Points & Readiness.</p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {leaderboard.map((item, idx) => (
-              <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: idx === 0 ? 'rgba(251, 191, 36, 0.08)' : 'var(--bg-secondary)', border: `1px solid ${idx === 0 ? 'rgba(251, 191, 36, 0.2)' : 'var(--border-color)'}`, borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-muted)' }}>#{idx + 1}</span>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>{item.name}</span>
+            {leaderboardError ? (
+               <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-danger)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>Failed to load leaderboard</div>
+            ) : !leaderboardData ? (
+               <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>Loading leaderboard...</div>
+            ) : leaderboard.length === 0 ? (
+               <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>No leaderboard data available yet</div>
+            ) : leaderboard.map((item, idx) => {
+              const isCurrentUser = user && user.id === item.userId;
+              
+              return (
+                <div key={item.userId} style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  padding: '0.75rem', 
+                  background: isCurrentUser ? 'rgba(56, 189, 248, 0.1)' : idx === 0 ? 'rgba(251, 191, 36, 0.08)' : 'var(--bg-secondary)', 
+                  border: `1px solid ${isCurrentUser ? 'rgba(56, 189, 248, 0.4)' : idx === 0 ? 'rgba(251, 191, 36, 0.2)' : 'var(--border-color)'}`, 
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: isCurrentUser ? '0 0 10px rgba(56, 189, 248, 0.2)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : 'var(--text-muted)', width: '24px' }}>#{item.rank}</span>
+                      <img src={item.profileImage} alt={item.username} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-primary)' }} />
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: isCurrentUser ? 'var(--color-primary)' : 'var(--text-primary)' }}>{item.username}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <span>⭐ Points: <strong style={{ color: 'var(--text-primary)' }}>{item.totalPoints.toLocaleString()}</strong></span>
+                    <span>📈 Readiness: <strong style={{ color: 'var(--color-accent)' }}>{item.readinessScore}%</strong></span>
+                  </div>
                 </div>
-                <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: '0.95rem' }}>
-                  {item.readinessScore}%
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          
+          {leaderboard.length > 0 && (
+            <button className="btn btn-secondary" style={{ width: '100%', marginTop: '1rem', fontSize: '0.85rem' }}>
+              View Full Leaderboard
+            </button>
+          )}
         </div>
 
       </div>
