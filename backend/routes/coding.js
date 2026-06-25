@@ -108,7 +108,7 @@ router.get('/questions', protect, async (req, res) => {
         concept_name: q.concept_id ? q.concept_id.name : null,
         is_solved: acceptedIds.has(q._id.toString()),
         solved_users: stat.solved_users,
-        acceptance_rate: total > 0 ? ((accepted / total) * 100).toFixed(2) : '0.00',
+        acceptance_rate: total > 0 ? ((accepted / total) * 100).toFixed(1) : '0.0',
         companies: q.companies || []
       };
     });
