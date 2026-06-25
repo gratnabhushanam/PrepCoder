@@ -107,6 +107,7 @@ const QuestionSchema = new mongoose.Schema({
   editorial: { type: String },
   video_solution: { type: String },
   status: { type: String, enum: ['Active', 'Hidden'], default: 'Active' },
+  isDeleted: { type: Boolean, default: false },
   public_testcases: [{
     input: { type: String, required: true },
     expected_output: { type: String, required: true }
@@ -182,7 +183,8 @@ const McqSchema = new mongoose.Schema({
   difficulty: { type: String, enum: ['Easy', 'Medium', 'Hard'], default: 'Medium' },
   category: { type: String, required: true },
   points: { type: Number, default: 1 },
-  status: { type: String, enum: ['Active', 'Draft'], default: 'Active' }
+  status: { type: String, enum: ['Active', 'Draft'], default: 'Active' },
+  isDeleted: { type: Boolean, default: false }
 }, { timestamps: true });
 
 McqSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });

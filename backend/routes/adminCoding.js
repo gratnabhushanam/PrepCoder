@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Concept, Question } = require('../config/db');
+const { Concept, Question, User } = require('../config/db');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // Add Concept
@@ -69,7 +69,7 @@ router.post('/questions', protect, adminOnly, async (req, res) => {
 // Get all questions (Admin view)
 router.get('/questions', protect, adminOnly, async (req, res) => {
   try {
-    const questions = await Question.find()
+    const questions = await Question.find({ isDeleted: { $ne: true } })
       .populate('concept_id', 'name')
       .sort({ createdAt: -1 })
       .lean();
@@ -141,11 +141,19 @@ router.put('/questions/:id', protect, adminOnly, async (req, res) => {
   }
 });
 
-// Delete Question
+// Soft Delete Question
 router.delete('/questions/:id', protect, adminOnly, async (req, res) => {
   try {
-    await Question.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Question deleted successfully' });
+    const questionId = req.params.id;
+    await Question.findByIdAndUpdate(questionId, { isDeleted: true });
+    
+    // Remove from all users' solvedProblems array to instantly update stats
+    await User.updateMany(
+      { solvedProblems: questionId },
+      { $pull: { solvedProblems: questionId } }
+    );
+    
+    res.json({ message: 'Question deleted successfully and user stats updated' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to delete question' });

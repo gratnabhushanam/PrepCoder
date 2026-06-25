@@ -48,12 +48,19 @@ router.get('/analytics', protect, async (req, res) => {
     res.json({
       summary: {
         totalUsers: users.length,
-        totalMcqs: mcqs.length,
-        totalProblems: problems.length,
+        activeUsers: users.filter(u => u.solvedProblems?.length > 0 || u.mcqStats?.totalAttempted > 0).length,
+        newUsersToday: users.filter(u => new Date(u.createdAt).toDateString() === new Date().toDateString()).length,
+        adminUsers: users.filter(u => u.role === 'admin').length,
+        totalQuestions: problems.length + mcqs.length,
+        totalCodingQuestions: problems.length,
+        totalMcqQuestions: mcqs.length,
+        totalSubmissions: submissions.length,
+        acceptedSolutions: submissions.filter(s => s.status === 'Accepted').length,
         easyProblems: diffMap.Easy,
         mediumProblems: diffMap.Medium,
         hardProblems: diffMap.Hard,
-        activeProblems: problems.filter(p => p.status === 'Active').length,
+        activeProblems: problems.filter(p => p.status === 'Active' && !p.isDeleted).length,
+        deletedQuestions: problems.filter(p => p.isDeleted).length + mcqs.filter(m => m.isDeleted).length,
         totalSolvedProblems,
         totalMcqAttempts
       },
@@ -74,11 +81,53 @@ router.get('/analytics', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/analytics/realtime
+// @desc    Retrieve data for charts (last 30 days)
+router.get('/analytics/realtime', protect, async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // 1. Daily User Registrations (Last 30 Days)
+    const users = await User.find({ createdAt: { $gte: thirtyDaysAgo } }, 'createdAt');
+    const registrationsByDay = {};
+    users.forEach(u => {
+      const date = new Date(u.createdAt).toISOString().split('T')[0];
+      registrationsByDay[date] = (registrationsByDay[date] || 0) + 1;
+    });
+    const registrationData = Object.keys(registrationsByDay).map(date => ({
+      date, count: registrationsByDay[date]
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // 2. Daily Problem Solves (Last 30 Days)
+    const submissions = await Submission.find({ 
+      submitted_at: { $gte: thirtyDaysAgo },
+      status: 'Accepted'
+    }, 'submitted_at submittedAt');
+    const solvesByDay = {};
+    submissions.forEach(s => {
+      const date = new Date(s.submitted_at || s.submittedAt).toISOString().split('T')[0];
+      solvesByDay[date] = (solvesByDay[date] || 0) + 1;
+    });
+    const solveData = Object.keys(solvesByDay).map(date => ({
+      date, count: solvesByDay[date]
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    res.json({
+      registrationData,
+      solveData
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch realtime analytics' });
+  }
+});
+
 // @route   GET /api/admin/mcqs
 // @desc    Retrieve all MCQs for Admin Table
 router.get('/mcqs', protect, async (req, res) => {
   try {
-    const mcqs = await Mcq.find({});
+    const mcqs = await Mcq.find({ isDeleted: { $ne: true } });
     // Sort by newest first
     mcqs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json(mcqs);
@@ -131,10 +180,10 @@ router.put('/mcqs/:id', protect, async (req, res) => {
 });
 
 // @route   DELETE /api/admin/mcqs/:id
-// @desc    Delete MCQ by ID
+// @desc    Soft Delete MCQ by ID
 router.delete('/mcqs/:id', protect, async (req, res) => {
   try {
-    await Mcq.deleteMany({ _id: req.params.id });
+    await Mcq.findByIdAndUpdate(req.params.id, { isDeleted: true });
     res.json({ message: 'MCQ deleted successfully' });
   } catch (error) {
     console.error(error);

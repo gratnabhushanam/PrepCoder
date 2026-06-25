@@ -3,6 +3,9 @@ import axios from 'axios';
 import { AppContext } from '../context/AppContext';
 import QuestionManagement from '../components/Admin/QuestionManagement';
 import AdminSidebar from '../components/Admin/AdminSidebar';
+import UsersManagement from '../components/Admin/UsersManagement';
+import SubmissionsManagement from '../components/Admin/SubmissionsManagement';
+import RealTimeAnalytics from '../components/Admin/RealTimeAnalytics';
 
 export default function AdminPanel() {
   const { API_BASE, user, token } = useContext(AppContext);
@@ -495,12 +498,16 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {['submissions', 'users', 'analytics', 'settings'].includes(activeTab) && (
+      {['settings'].includes(activeTab) && (
         <div className="card">
           <h3 className="card-title">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h3>
           <p style={{ color: 'var(--text-secondary)' }}>This feature is coming soon.</p>
         </div>
       )}
+      
+      {activeTab === 'users' && <UsersManagement />}
+      {activeTab === 'submissions' && <SubmissionsManagement />}
+      {activeTab === 'analytics' && <RealTimeAnalytics />}
 
       </div>
     </div>

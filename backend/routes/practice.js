@@ -7,7 +7,7 @@ const { protect } = require('../middleware/authMiddleware');
 // @desc    Get all active MCQ categories with counts
 router.get('/topics', async (req, res) => {
   try {
-    const mcqs = await Mcq.find({ status: 'Active' });
+    const mcqs = await Mcq.find({ status: 'Active', isDeleted: { $ne: true } });
     const topicsMap = {};
     mcqs.forEach(m => {
       topicsMap[m.category] = (topicsMap[m.category] || 0) + 1;
@@ -49,7 +49,7 @@ function getTopicIcon(topic) {
 router.get('/mcqs', async (req, res) => {
   const { topic } = req.query; // keeping query param name same for frontend compatibility or map it
   try {
-    const query = { status: 'Active' };
+    const query = { status: 'Active', isDeleted: { $ne: true } };
     if (topic) query.category = topic;
     const mcqs = await Mcq.find(query);
     res.json(mcqs);
@@ -65,7 +65,7 @@ router.get('/mcqs/random', async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const { topic } = req.query;
   try {
-    const query = { status: 'Active' };
+    const query = { status: 'Active', isDeleted: { $ne: true } };
     if (topic) query.category = topic;
     const mcqs = await Mcq.find(query);
     

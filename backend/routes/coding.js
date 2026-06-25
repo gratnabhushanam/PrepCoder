@@ -12,7 +12,7 @@ router.get('/concepts', protect, async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
     const concepts = await Concept.find().lean();
-    const questions = await Question.find({ status: 'Active' }).lean();
+    const questions = await Question.find({ status: 'Active', isDeleted: { $ne: true } }).lean();
     
     // Get user's accepted submissions
     const acceptedSubs = await Submission.find({ 
@@ -59,7 +59,7 @@ router.get('/questions', protect, async (req, res) => {
   const userId = req.user._id || req.user.id;
 
   try {
-    const query = { status: 'Active' };
+    const query = { status: 'Active', isDeleted: { $ne: true } };
     if (concept_id) query.concept_id = concept_id;
     if (difficulty) query.difficulty = difficulty;
     if (company) query.companies = company;
