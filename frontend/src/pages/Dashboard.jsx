@@ -1,61 +1,22 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppContext } from '../context/AppContext';
+import useSWR from 'swr';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const { user, API_BASE, token } = useContext(AppContext);
   
   const [mentorData, setMentorData] = useState(null);
   const [loadingMentor, setLoadingMentor] = useState(false);
-  const [tasks, setTasks] = useState([
-    { id: 1, text: "Solve a coding problem from the workspace", done: false },
-    { id: 2, text: "Complete one MCQ topic test", done: false },
-    { id: 3, text: "Upload your resume to check ATS Score", done: false },
-    { id: 4, text: "Perform a mock HR Interview round", done: false }
-  ]);
 
-  // Sync initial tasks based on user history and fetch a real problem
-  useEffect(() => {
-    const fetchRealTasks = async () => {
-      try {
-        let problemText = "Solve a coding problem from the workspace";
-        
-        // Fetch a real problem to solve
-        const res = await axios.get(`${API_BASE}/coding/concepts`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.data && res.data.length > 0) {
-          const conceptId = res.data[0]._id || res.data[0].id;
-          const probRes = await axios.get(`${API_BASE}/coding/questions?concept_id=${conceptId}&difficulty=Easy`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (probRes.data && probRes.data.length > 0) {
-            problemText = `Solve '${probRes.data[0].title}' in the workspace`;
-          }
-        }
+  const fetcher = url => axios.get(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data);
 
-        if (user) {
-          setTasks([
-            { id: 1, text: problemText, done: user.solvedProblems?.length > 0 },
-            { id: 2, text: "Complete one MCQ topic test", done: user.mcqStats?.totalAttempted > 0 },
-            { id: 3, text: "Upload your resume to check ATS Score", done: user.resumeData?.atsScore > 0 },
-            { id: 4, text: "Perform a mock HR Interview round", done: user.aiInterviewStats?.length > 0 }
-          ]);
-        }
-      } catch (err) {
-        console.error("Failed to load real tasks", err);
-      }
-    };
-    
-    if (user && token) {
-      fetchRealTasks();
-    }
-  }, [user, API_BASE, token]);
-
-  const toggleTask = (id) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  };
+  // Poll backend every 5 seconds for real-time updates without page reload
+  const { data: stats } = useSWR(token ? `${API_BASE}/dashboard/stats` : null, fetcher, { refreshInterval: 5000 });
+  const { data: tasks } = useSWR(token ? `${API_BASE}/dashboard/tasks` : null, fetcher, { refreshInterval: 5000 });
+  const { data: charts } = useSWR(token ? `${API_BASE}/dashboard/charts` : null, fetcher, { refreshInterval: 5000 });
 
   const generateMentorPlan = async () => {
     setLoadingMentor(true);
@@ -71,20 +32,9 @@ export default function Dashboard() {
     }
   };
 
-  if (!user) return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading user profile...</div>;
+  if (!user || !stats) return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading user dashboard...</div>;
 
-  // Calculate actual readiness score instead of fake defaults
-  let calculatedScore = 0;
-  if (user.readinessScore) {
-    calculatedScore = user.readinessScore;
-  } else {
-    if (user.solvedProblems?.length > 0) calculatedScore += 25;
-    if (user.mcqStats?.totalAttempted > 0) calculatedScore += 25;
-    if (user.resumeData?.atsScore > 0) calculatedScore += 25;
-    if (user.aiInterviewStats?.length > 0) calculatedScore += 25;
-  }
-  const score = calculatedScore;
-  
+  const score = stats.readinessScore || 0;
   const radius = 70;
   const circ = 2 * Math.PI * radius;
   const strokeDashoffset = circ - (score / 100) * circ;
@@ -92,7 +42,7 @@ export default function Dashboard() {
   return (
     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
       
-      {/* Welcome Banner */}
+      {/* Welcome Banner & Rank */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -109,7 +59,11 @@ export default function Dashboard() {
             Track your progress, practice coding algorithms, and test with interactive mock modules.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', margin: 0 }}>
+             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>Global Rank</span>
+             <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)' }}>#{stats.rank}</span>
+          </div>
           <Link to="/ai-interview" className="btn btn-primary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Mock Interview
@@ -175,7 +129,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h4 style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>Algorithms Solved</h4>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{user.solvedProblems?.length || 0}</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stats.algorithmsSolved}</div>
               </div>
             </div>
 
@@ -185,7 +139,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h4 style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>MCQs Practiced</h4>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{user.mcqStats?.totalAttempted || 0}</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stats.mcqsPracticed}</div>
               </div>
             </div>
 
@@ -195,7 +149,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h4 style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>ATS Score</h4>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{user.resumeData?.atsScore ? `${user.resumeData.atsScore}%` : 'N/A'}</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stats.atsScore ? `${stats.atsScore}%` : 'N/A'}</div>
               </div>
             </div>
 
@@ -205,7 +159,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h4 style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>Daily Streak</h4>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{user.dailyStreak || 0} Days</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stats.streak} Days</div>
               </div>
             </div>
 
@@ -213,19 +167,68 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Grid: Study plan & Tasks Checklist */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2.5rem' }}>
+      {/* Graphs Section */}
+      {charts && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2.5rem' }}>
+          <div className="card">
+            <h3 className="card-title">Coding Progress</h3>
+            <div style={{ height: '200px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={charts.codingProgress}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="date" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none' }} />
+                  <Bar dataKey="solved" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
+          <div className="card">
+            <h3 className="card-title">MCQ Performance</h3>
+            <div style={{ height: '200px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={charts.mcqPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="name" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none' }} />
+                  <Line type="monotone" dataKey="score" stroke="var(--color-success)" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 className="card-title">ATS Improvement</h3>
+            <div style={{ height: '200px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={charts.atsImprovement}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="attempt" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none' }} />
+                  <Line type="monotone" dataKey="score" stroke="var(--color-info)" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grid: Tasks Checklist & Recent Activity & AI Mentor */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2.5rem' }}>
         
         {/* Left Side: Tasks checklist */}
         <div className="card">
           <h3 className="card-title">Daily Progress Tasks</h3>
-          <p className="card-desc">Complete these tasks to increase your overall rating.</p>
+          <p className="card-desc">Tasks dynamically update based on your database progress.</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {tasks.map(t => (
+            {tasks && tasks.map(t => (
               <div 
                 key={t.id} 
-                onClick={() => toggleTask(t.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -234,7 +237,6 @@ export default function Dashboard() {
                   background: t.done ? 'rgba(34, 197, 94, 0.05)' : 'var(--bg-secondary)',
                   border: `1px solid ${t.done ? 'rgba(34, 197, 94, 0.2)' : 'var(--border-color)'}`,
                   borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
                   transition: 'var(--transition-fast)'
                 }}
               >
@@ -260,6 +262,23 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Middle: Recent Activity */}
+        <div className="card">
+          <h3 className="card-title">Recent Activity</h3>
+          <p className="card-desc">Your latest accepted submissions and test results.</p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {stats.recentActivity && stats.recentActivity.length > 0 ? stats.recentActivity.map((activity, idx) => (
+              <div key={idx} style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{activity.text}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{new Date(activity.date).toLocaleString()}</div>
+              </div>
+            )) : (
+               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No recent activity yet. Start solving problems!</p>
+            )}
           </div>
         </div>
 

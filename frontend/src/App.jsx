@@ -2,20 +2,21 @@ import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, Link } from 'react-router-dom';
 import { AppContext } from './context/AppContext';
 
-// Import Pages
+// Import Pages Dynamically for Code Splitting
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import MCQPlatform from './pages/MCQPlatform';
-import ConceptsDashboard from './pages/ConceptsDashboard';
-import DifficultySelection from './pages/DifficultySelection';
-import QuestionsList from './pages/QuestionsList';
-import CodingWorkspace from './pages/CodingWorkspace';
-import ATSChecker from './pages/ATSChecker';
-import AIMockInterview from './pages/AIMockInterview';
-import Profile from './pages/Profile';
-import AdminPanel from './pages/AdminPanel';
+
+const MCQPlatform = React.lazy(() => import('./pages/MCQPlatform'));
+const ConceptsDashboard = React.lazy(() => import('./pages/ConceptsDashboard'));
+const DifficultySelection = React.lazy(() => import('./pages/DifficultySelection'));
+const QuestionsList = React.lazy(() => import('./pages/QuestionsList'));
+const CodingWorkspace = React.lazy(() => import('./pages/CodingWorkspace'));
+const ATSChecker = React.lazy(() => import('./pages/ATSChecker'));
+const AIMockInterview = React.lazy(() => import('./pages/AIMockInterview'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
 
 // Protected Route Wrapper Component
 const ProtectedRoute = ({ children }) => {
@@ -125,27 +126,29 @@ export default function App() {
 
         {/* Core Layout Content */}
         <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/mcq" element={<ProtectedRoute><MCQPlatform /></ProtectedRoute>} />
-            <Route path="/mcq/:topic" element={<ProtectedRoute><MCQPlatform /></ProtectedRoute>} />
-            <Route path="/coding" element={<ProtectedRoute><ConceptsDashboard /></ProtectedRoute>} />
-            <Route path="/coding/concept/:conceptId" element={<ProtectedRoute><DifficultySelection /></ProtectedRoute>} />
-            <Route path="/coding/concept/:conceptId/difficulty/:difficulty" element={<ProtectedRoute><QuestionsList /></ProtectedRoute>} />
-            <Route path="/coding/problem/:id" element={<ProtectedRoute><CodingWorkspace /></ProtectedRoute>} />
-            <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
-            <Route path="/ai-interview" element={<ProtectedRoute><AIMockInterview /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+          <React.Suspense fallback={<div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading module...</div>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              
+              {/* Protected Routes */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/mcq" element={<ProtectedRoute><MCQPlatform /></ProtectedRoute>} />
+              <Route path="/mcq/:topic" element={<ProtectedRoute><MCQPlatform /></ProtectedRoute>} />
+              <Route path="/coding" element={<ProtectedRoute><ConceptsDashboard /></ProtectedRoute>} />
+              <Route path="/coding/concept/:conceptId" element={<ProtectedRoute><DifficultySelection /></ProtectedRoute>} />
+              <Route path="/coding/concept/:conceptId/difficulty/:difficulty" element={<ProtectedRoute><QuestionsList /></ProtectedRoute>} />
+              <Route path="/coding/problem/:id" element={<ProtectedRoute><CodingWorkspace /></ProtectedRoute>} />
+              <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
+              <Route path="/ai-interview" element={<ProtectedRoute><AIMockInterview /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
 
-            {/* Fallback routing */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Fallback routing */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </React.Suspense>
         </main>
 
         <footer className="footer no-print">

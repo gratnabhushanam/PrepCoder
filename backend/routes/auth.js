@@ -2,8 +2,21 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const { User } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login requests per windowMs
+  message: { message: 'Too many login attempts from this IP, please try again after 15 minutes' },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Limit each IP to 5 register requests per hour
+  message: { message: 'Too many accounts created from this IP, please try again after an hour' },
+});
 
 const generateToken = (id, email, role) => {
   return jwt.sign({ id, email, role }, process.env.JWT_SECRET || 'supersecret-token-key-1234', {
@@ -13,7 +26,7 @@ const generateToken = (id, email, role) => {
 
 // @route   POST /api/auth/register
 // @desc    Register new user
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
@@ -54,7 +67,7 @@ router.post('/register', async (req, res) => {
 
 // @route   POST /api/auth/login
 // @desc    Authenticate user
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {

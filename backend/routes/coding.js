@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { Concept, Question, Submission, User } = require('../config/db');
-const { protect } = require('../middleware/authMiddleware');
 const { executeCode } = require('../services/codeRunner');
+const { syncUserStats } = require('../utils/statsUpdater');
+const { protect } = require('../middleware/authMiddleware');
 
 // @route   GET /api/coding/concepts
 // @desc    Get all concepts and user progress
@@ -203,92 +204,58 @@ router.post('/submit', protect, async (req, res) => {
     
     const allCases = [...publicCases, ...hiddenCases];
 
-    const results = await executeCode(question.title, language, code, allCases);
+    // Synchronous execution fallback (No Redis required)
+    const results = await executeCode('Submission', language, code, allCases);
     
-    const totalCases = results.length;
-    const passedCases = results.filter(r => r.passed).length;
-    
-    let status = 'Accepted';
-    let runtimeErr = results.find(r => r.error);
-    if (runtimeErr) {
-      status = runtimeErr.error.includes('timed out') ? 'Time Limit Exceeded' : 'Runtime Error';
-    } else if (passedCases < totalCases) {
-      status = 'Wrong Answer';
-    }
+    const totalCases = allCases.length;
+    const passedCases = results.filter(r => r.status === 'Accepted').length;
+    const isAccepted = passedCases === totalCases;
+    const finalVerdict = isAccepted ? 'Accepted' : (results.find(r => r.status !== 'Accepted')?.status || 'Wrong Answer');
 
-    // Save submission
-    await Submission.create({
+    // Save Submission
+    const submission = new Submission({
       user_id: userId,
       question_id: problemId,
       code,
       language,
-      status,
+      status: finalVerdict,
       passed_cases: passedCases,
       total_cases: totalCases,
-      execution_time: Math.floor(Math.random() * 50) + 10 // Mock execution time
+      execution_time: Math.max(...results.map(r => r.time || 0)),
+      memory_used: Math.max(...results.map(r => r.memory || 0))
     });
+    await submission.save();
 
+    // If Accepted, update user stats
     let user = await User.findById(userId);
-
-    if (status === 'Accepted') {
-      // Check if previously accepted
-      const prevAccepted = await Submission.exists({ 
-        user_id: userId, 
-        question_id: problemId, 
-        status: 'Accepted',
-        _id: { $ne: null } // Just needs to exist other than this one if we wanted to be strict, but we already created it. Wait, we just created it.
-      });
-
-      // Actually, since we JUST created the accepted submission, finding one will ALWAYS return true.
-      // We need to count accepted submissions for this user and question. If it's exactly 1, it's the first time.
-      const acceptedCount = await Submission.countDocuments({
-        user_id: userId,
-        question_id: problemId,
-        status: 'Accepted'
-      });
-
-      if (acceptedCount === 1) {
-        // First time solved!
-        user.userProgress.total_solved += 1;
-        if (question.difficulty === 'Easy') user.userProgress.easy_solved += 1;
-        if (question.difficulty === 'Medium') user.userProgress.medium_solved += 1;
-        if (question.difficulty === 'Hard') user.userProgress.hard_solved += 1;
+    if (isAccepted && user) {
+      if (!user.solvedProblems) user.solvedProblems = [];
+      if (!user.solvedProblems.includes(problemId.toString())) {
+        user.solvedProblems.push(problemId.toString());
         
-        user.userProgress.current_streak += 1; // Simple streak logic
-        if (!user.solvedProblems) user.solvedProblems = [];
-        if (!user.solvedProblems.includes(problemId.toString())) {
-          user.solvedProblems.push(problemId.toString());
+        const today = new Date().toISOString().split('T')[0];
+        const lastActive = user.lastActiveDate ? new Date(user.lastActiveDate).toISOString().split('T')[0] : null;
+        if (lastActive !== today) {
+          user.dailyStreak = (user.dailyStreak || 0) + 1;
+          user.lastActiveDate = new Date();
         }
         await user.save();
+        await syncUserStats(userId);
       }
     }
 
-    // Aggregating user submission stats
-    const totalSubmissionsCount = await Submission.countDocuments({ user_id: userId });
-    const acceptedSubmissionsCount = await Submission.countDocuments({ user_id: userId, status: 'Accepted' });
-    const acceptanceRate = totalSubmissionsCount > 0 ? Math.round((acceptedSubmissionsCount / totalSubmissionsCount) * 100) : 0;
-
+    const UserStats = require('../models/UserStats');
+    const stats = await UserStats.findOne({ userId }) || {};
+    
     res.json({
-      status,
+      status: finalVerdict,
       passedCases,
       totalCases,
-      results: results.map(r => ({
-        passed: r.passed,
-        isHidden: r.isHidden,
-        error: r.error,
-        input: r.isHidden ? 'Hidden' : r.input,
-        output: r.isHidden ? 'Hidden' : r.output,
-        expected: r.isHidden ? 'Hidden' : r.expected
-      })),
+      results: [], // Hide detailed hidden case results
       stats: {
-        totalSolved: user.userProgress?.total_solved || 0,
-        easySolved: user.userProgress?.easy_solved || 0,
-        mediumSolved: user.userProgress?.medium_solved || 0,
-        hardSolved: user.userProgress?.hard_solved || 0,
-        currentStreak: user.userProgress?.current_streak || 0,
-        longestStreak: user.userProgress?.current_streak || 0,
-        totalSubmissions: totalSubmissionsCount,
-        acceptanceRate: acceptanceRate
+        totalSolved: stats.solvedProblems?.length || 0,
+        currentStreak: stats.currentStreak || 0,
+        longestStreak: stats.longestStreak || 0,
       }
     });
 

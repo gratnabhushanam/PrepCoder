@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AppContext } from '../../context/AppContext';
-import { Search, Filter, Edit, Trash2, Copy, Eye, CheckSquare, Square } from 'lucide-react';
+import { Search, Filter, Edit, Trash2, Copy, Eye, EyeOff, CheckSquare, Square } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import EditQuestionModal from './EditQuestionModal';
 
 export default function QuestionManagement() {
   const { API_BASE, token } = useContext(AppContext);
@@ -107,6 +108,22 @@ export default function QuestionManagement() {
       fetchQuestions();
     } catch (err) {
       toast.error('Failed to delete');
+    }
+  };
+
+  const handleToggleStatus = async (q) => {
+    try {
+      const newStatus = q.status === 'Active' ? 'Hidden' : 'Active';
+      if (q.type === 'MCQ') {
+        await axios.put(`${API_BASE}/admin/mcqs/${q.id}`, { ...q.raw, status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+      } else {
+        const res = await axios.get(`${API_BASE}/admin/coding/questions/${q.id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.put(`${API_BASE}/admin/coding/questions/${q.id}`, { ...res.data, status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+      }
+      toast.success(`Status updated to ${newStatus}`);
+      fetchQuestions();
+    } catch (err) {
+      toast.error('Failed to update status');
     }
   };
 
@@ -246,6 +263,7 @@ export default function QuestionManagement() {
                 </td>
                 <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                   <button onClick={() => setViewingQuestion(q)} className="action-btn" title="View"><Eye size={16} /></button>
+                  <button onClick={() => handleToggleStatus(q)} className="action-btn" title={q.status === 'Active' ? 'Disable' : 'Enable'}>{q.status === 'Active' ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                   <button onClick={() => setEditingQuestion(q)} className="action-btn" title="Edit"><Edit size={16} /></button>
                   <button onClick={() => handleDuplicate(q)} className="action-btn" title="Duplicate"><Copy size={16} /></button>
                   <button onClick={() => handleDelete(q.id, q.type)} className="action-btn text-danger" title="Delete"><Trash2 size={16} /></button>
@@ -300,17 +318,13 @@ export default function QuestionManagement() {
         </div>
       )}
 
-      {/* Basic Edit Modal Placeholder (To be expanded in future iterations) */}
+      {/* Edit Modal */}
       {editingQuestion && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <div style={{ background: 'var(--surface-color)', padding: '2rem', borderRadius: '12px', maxWidth: '800px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 className="text-xl font-bold mb-4">Edit {editingQuestion.type} Question</h3>
-            <p>Edit functionality form goes here. Since this is an extensive form with test cases, it will connect to the new PUT endpoints.</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-              <button onClick={() => setEditingQuestion(null)} className="btn btn-secondary">Cancel</button>
-            </div>
-          </div>
-        </div>
+        <EditQuestionModal
+          question={editingQuestion}
+          onClose={() => setEditingQuestion(null)}
+          onRefresh={fetchQuestions}
+        />
       )}
     </div>
   );

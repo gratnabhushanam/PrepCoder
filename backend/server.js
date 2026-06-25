@@ -49,6 +49,10 @@ app.use('/api/coding', require('./routes/coding'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/coding', require('./routes/adminCoding'));
+// require('./config/redis');
+// require('./queues/submissionQueue');
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // Base route for server status
 app.get('/', (req, res) => {

@@ -50,6 +50,10 @@ router.get('/analytics', protect, async (req, res) => {
         totalUsers: users.length,
         totalMcqs: mcqs.length,
         totalProblems: problems.length,
+        easyProblems: diffMap.Easy,
+        mediumProblems: diffMap.Medium,
+        hardProblems: diffMap.Hard,
+        activeProblems: problems.filter(p => p.status === 'Active').length,
         totalSolvedProblems,
         totalMcqAttempts
       },

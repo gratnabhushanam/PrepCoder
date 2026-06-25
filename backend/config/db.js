@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 // Database connection initialization
 async function connectDB() {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/coding_platform';
+  const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/coding_platform';
   try {
     mongoose.set('strictQuery', false);
     await mongoose.connect(mongoURI, {
@@ -59,6 +59,8 @@ const UserSchema = new mongoose.Schema({
     uploadedAt: Date
   }
 });
+
+UserSchema.index({ name: 1 });
 
 // Transform _id to id for frontend compatibility
 UserSchema.set('toJSON', {
@@ -125,6 +127,9 @@ const QuestionSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+QuestionSchema.index({ title: 'text', statement: 'text' });
+QuestionSchema.index({ concept_id: 1, difficulty: 1 });
+
 QuestionSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, ret) => {
@@ -149,6 +154,10 @@ const SubmissionSchema = new mongoose.Schema({
   memory_used: { type: Number, default: 0 },
   submitted_at: { type: Date, default: Date.now }
 });
+
+SubmissionSchema.index({ user_id: 1 });
+SubmissionSchema.index({ question_id: 1 });
+SubmissionSchema.index({ submitted_at: -1 });
 
 SubmissionSchema.set('toJSON', {
   virtuals: true,
@@ -213,6 +222,20 @@ const CompanySchema = new mongoose.Schema({
 CompanySchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
 const Company = mongoose.models.Company || mongoose.model('Company', CompanySchema);
 
+// 7. McqAttempt Schema
+const McqAttemptSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  mcqId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mcq', required: true },
+  selectedOption: { type: String, required: true },
+  isCorrect: { type: Boolean, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+McqAttemptSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
+const McqAttempt = mongoose.models.McqAttempt || mongoose.model('McqAttempt', McqAttemptSchema);
+
+// 8. UserStats
+const UserStats = require('../models/UserStats');
+
 // Admin Seeder
 async function seedAdmin() {
   try {
@@ -243,5 +266,7 @@ module.exports = {
   Question,
   Submission,
   Mcq,
-  Company
+  Company,
+  McqAttempt,
+  UserStats
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AppContext } from '../context/AppContext';
 import QuestionManagement from '../components/Admin/QuestionManagement';
+import AdminSidebar from '../components/Admin/AdminSidebar';
 
 export default function AdminPanel() {
   const { API_BASE, user, token } = useContext(AppContext);
@@ -206,38 +207,12 @@ export default function AdminPanel() {
   if (loading) return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading Admin Workspace...</div>;
 
   return (
-    <div style={{ animation: 'fadeIn 0.5s ease' }}>
-      <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '0.5rem' }}>Admin Control Center</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Configure test inventories, track platform usage, and review user analytics.</p>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', gap: '1rem', overflowX: 'auto' }}>
-        {[
-          { id: 'overview', label: 'System Overview' },
-          { id: 'manage_questions', label: 'Question Management' },
-          { id: 'add_mcq', label: 'Add MCQ Question' },
-          { id: 'add_concept', label: 'Add Concept' },
-          { id: 'add_prob', label: 'Upload Coding Question' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setMessage(''); }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === tab.id ? '2px solid var(--color-primary)' : '2px solid transparent',
-              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
-              padding: '0.75rem 1rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'var(--transition-fast)'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }}>
+      <AdminSidebar activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setMessage(''); }} />
+      
+      <div style={{ flex: 1, padding: '2rem', overflowY: 'auto', animation: 'fadeIn 0.5s ease' }}>
+        <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '0.5rem' }}>Admin Control Center</h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Configure test inventories, track platform usage, and review user analytics.</p>
 
       {message && (
         <div style={{
@@ -258,24 +233,24 @@ export default function AdminPanel() {
         <div>
           <div className="grid-4" style={{ marginBottom: '2.5rem' }}>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalUsers}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Total Users</div>
-            </div>
-            <div className="card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalProblems}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Coding Questions</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Total Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalMcqs}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>MCQ Questions</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{analytics.summary.easyProblems}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Easy Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalSolvedProblems || 0}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Solved Problems</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-warning)' }}>{analytics.summary.mediumProblems}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Medium Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalMcqAttempts || 0}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>MCQ Attempts</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-danger)' }}>{analytics.summary.hardProblems}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Hard Questions</div>
+            </div>
+            <div className="card" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)' }}>{analytics.summary.activeProblems}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Active Questions</div>
             </div>
           </div>
         </div>
@@ -520,6 +495,14 @@ export default function AdminPanel() {
         </div>
       )}
 
+      {['submissions', 'users', 'analytics', 'settings'].includes(activeTab) && (
+        <div className="card">
+          <h3 className="card-title">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>This feature is coming soon.</p>
+        </div>
+      )}
+
+      </div>
     </div>
   );
 }
