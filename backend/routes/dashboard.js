@@ -71,6 +71,8 @@ router.get('/tasks', protect, async (req, res) => {
     if (!stats) stats = { solvedProblems: [], mcqsPracticed: 0, atsScore: 0, currentStreak: 0 };
 
     const algorithmsSolved = stats.solvedProblems.length;
+    
+    const tasks = [];
 
     // Dynamic Task Generation
     tasks.push({

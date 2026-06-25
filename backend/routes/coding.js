@@ -262,6 +262,23 @@ router.post('/submit', protect, async (req, res) => {
     const UserStats = require('../models/UserStats');
     const stats = await UserStats.findOne({ userId }) || {};
     
+    // Calculate total submissions and acceptance rate
+    const allUserSubs = await Submission.find({ user_id: userId });
+    const totalSubmissions = allUserSubs.length;
+    const acceptedSubs = allUserSubs.filter(s => s.status === 'Accepted').length;
+    const acceptanceRate = totalSubmissions > 0 ? Math.round((acceptedSubs / totalSubmissions) * 100) : 0;
+
+    // Calculate difficulty breakdown
+    let easySolved = 0, mediumSolved = 0, hardSolved = 0;
+    if (stats.solvedProblems && stats.solvedProblems.length > 0) {
+      const solvedQs = await Question.find({ _id: { $in: stats.solvedProblems } });
+      solvedQs.forEach(q => {
+        if (q.difficulty === 'Easy') easySolved++;
+        else if (q.difficulty === 'Medium') mediumSolved++;
+        else if (q.difficulty === 'Hard') hardSolved++;
+      });
+    }
+
     res.json({
       status: finalVerdict,
       passedCases,
@@ -269,8 +286,13 @@ router.post('/submit', protect, async (req, res) => {
       results: [], // Hide detailed hidden case results
       stats: {
         totalSolved: stats.solvedProblems?.length || 0,
+        easySolved,
+        mediumSolved,
+        hardSolved,
         currentStreak: stats.currentStreak || 0,
         longestStreak: stats.longestStreak || 0,
+        totalSubmissions,
+        acceptanceRate
       }
     });
 
