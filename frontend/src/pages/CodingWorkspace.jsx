@@ -18,11 +18,14 @@ export default function CodingWorkspace() {
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [outputResults, setOutputResults] = useState(null);
-  const [activeConsoleTab, setActiveConsoleTab] = useState('results'); // results, submissions
+  const [activeConsoleTab, setActiveConsoleTab] = useState('results'); // results, submissions, custom
   const [userSubmissions, setUserSubmissions] = useState([]);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [resubmitMode, setResubmitMode] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  
+  const [customInput, setCustomInput] = useState('');
+  const [useCustomInput, setUseCustomInput] = useState(false);
 
   const defaultTemplates = {
     python: "def main():\n    # Read input from stdin\n    # Example: n = int(input())\n    pass\n\nif __name__ == '__main__':\n    main()",
@@ -100,14 +103,23 @@ export default function CodingWorkspace() {
     setOutputResults(null);
     setActiveConsoleTab('results');
     try {
-      const res = await axios.post(`${API_BASE}/coding/run`, {
-        problemId: id,
-        language,
-        code
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setOutputResults({ type: 'run', cases: res.data });
+      if (useCustomInput) {
+        const res = await axios.post(`${API_BASE}/compiler/run`, {
+          language,
+          code,
+          input: customInput
+        });
+        setOutputResults({ type: 'custom_run', data: res.data });
+      } else {
+        const res = await axios.post(`${API_BASE}/coding/run`, {
+          problemId: id,
+          language,
+          code
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setOutputResults({ type: 'run', cases: res.data });
+      }
     } catch (err) {
       setOutputResults({ type: 'error', error: err.response?.data?.message || 'Compile/Run request failed.' });
     } finally {
@@ -306,6 +318,12 @@ export default function CodingWorkspace() {
                 Compiler Output
               </button>
               <button 
+                onClick={() => setActiveConsoleTab('custom')}
+                style={{ background: 'transparent', border: 'none', color: activeConsoleTab === 'custom' ? 'var(--text-primary)' : 'var(--text-muted)', borderBottom: activeConsoleTab === 'custom' ? '2px solid var(--color-primary)' : 'none', padding: '0.2rem 0', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                Custom Input
+              </button>
+              <button 
                 onClick={() => setActiveConsoleTab('submissions')}
                 style={{ background: 'transparent', border: 'none', color: activeConsoleTab === 'submissions' ? 'var(--text-primary)' : 'var(--text-muted)', borderBottom: activeConsoleTab === 'submissions' ? '2px solid var(--color-primary)' : 'none', padding: '0.2rem 0', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
               >
@@ -323,6 +341,34 @@ export default function CodingWorkspace() {
                   <div style={{ color: '#6b7280' }}>Run or Submit your code to check compiler outputs here...</div>
                 ) : outputResults.type === 'error' ? (
                   <div style={{ color: 'var(--color-danger)' }}>{outputResults.error}</div>
+                ) : outputResults.type === 'custom_run' ? (
+                  <div>
+                    <h4 style={{ color: '#f3f4f6', marginBottom: '1rem', fontSize: '1.1rem' }}>Custom Output</h4>
+                    {outputResults.data.compileError ? (
+                      <div style={{ color: 'var(--color-danger)', whiteSpace: 'pre-wrap', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '4px' }}>
+                        <strong>Compilation Error:</strong><br/>
+                        {outputResults.data.compileError}
+                      </div>
+                    ) : outputResults.data.runtimeError ? (
+                       <div style={{ color: 'var(--color-danger)', whiteSpace: 'pre-wrap', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '4px' }}>
+                        <strong>Runtime Error:</strong><br/>
+                        {outputResults.data.runtimeError}
+                        <br/><br/><strong>Standard Error:</strong><br/>
+                        {outputResults.data.stderr}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                           <div style={{ color: '#6b7280', marginBottom: '0.2rem' }}>Output:</div>
+                           <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '4px', color: '#abb2bf', whiteSpace: 'pre-wrap' }}>{outputResults.data.stdout || 'No output'}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
+                          <div><strong style={{ color: '#6b7280' }}>Time:</strong> {Math.floor(outputResults.data.executionTime)} ms</div>
+                          <div><strong style={{ color: '#6b7280' }}>Memory:</strong> {outputResults.data.memoryUsed} MB</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : outputResults.type === 'run' ? (
                   <div>
                     <h4 style={{ color: '#f3f4f6', marginBottom: '1rem', fontSize: '1.1rem' }}>Run Results</h4>
@@ -444,6 +490,22 @@ export default function CodingWorkspace() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeConsoleTab === 'custom' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input type="checkbox" id="useCustomInput" checked={useCustomInput} onChange={(e) => setUseCustomInput(e.target.checked)} />
+                  <label htmlFor="useCustomInput" style={{ color: 'var(--text-primary)', cursor: 'pointer' }}>Test against custom input</label>
+                </div>
+                <textarea
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  disabled={!useCustomInput}
+                  placeholder="Enter custom input here..."
+                  style={{ flex: 1, minHeight: '150px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.75rem', fontFamily: 'var(--font-mono)', borderRadius: '4px', resize: 'vertical' }}
+                />
               </div>
             )}
 

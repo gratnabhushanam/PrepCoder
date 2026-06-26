@@ -49,6 +49,7 @@ app.use('/api/coding', require('./routes/coding'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/coding', require('./routes/adminCoding'));
+app.use('/api/compiler', require('./routes/compiler'));
 // require('./config/redis');
 // require('./queues/submissionQueue');
 app.use('/api/dashboard', require('./routes/dashboard'));
