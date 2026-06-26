@@ -1,0 +1,25 @@
+{
+  "name": "coding-platform-microservices",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "shared",
+    "api-gateway",
+    "auth-service",
+    "compiler-service",
+    "mcq-service",
+    "interview-service",
+    "ats-service",
+    "contest-service",
+    "admin-service"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w api-gateway\" \"npm run dev -w auth-service\" \"npm run dev -w compiler-service\" \"npm run dev -w mcq-service\" \"npm run dev -w interview-service\" \"npm run dev -w ats-service\" \"npm run dev -w contest-service\" \"npm run dev -w admin-service\" \"npm run dev -w client\"",
+    "start": "concurrently \"npm start -w api-gateway\" \"npm start -w auth-service\" \"npm start -w compiler-service\" \"npm start -w mcq-service\" \"npm start -w interview-service\" \"npm start -w ats-service\" \"npm start -w contest-service\" \"npm start -w admin-service\" \"npm start -w client\"",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

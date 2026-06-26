@@ -31,6 +31,7 @@ export default function AdminPanel() {
   const [probOutputFormat, setProbOutputFormat] = useState('');
   const [probCompanies, setProbCompanies] = useState('');
   const [probEditorial, setProbEditorial] = useState('');
+  const [probHints, setProbHints] = useState('');
   const [probVideo, setProbVideo] = useState('');
   
   // Testcases dynamic array
@@ -133,6 +134,7 @@ export default function AdminPanel() {
         input_format: probInputFormat,
         output_format: probOutputFormat,
         editorial: probEditorial,
+        hints: probHints.split('\n').filter(h => h.trim() !== ''),
         video_solution: probVideo,
         companies: companiesArr,
         public_testcases: publicCases.filter(tc => tc.input && tc.expected_output),
@@ -148,6 +150,7 @@ export default function AdminPanel() {
       setProbInputFormat('');
       setProbOutputFormat('');
       setProbEditorial('');
+      setProbHints('');
       setProbVideo('');
       setProbCompanies('');
       setPublicCases([{ input: '', expected_output: '' }]);
@@ -446,9 +449,14 @@ export default function AdminPanel() {
                 <textarea className="form-control" rows="2" value={probEditorial} onChange={(e) => setProbEditorial(e.target.value)} placeholder="Explanation of the approach..." />
               </div>
               <div className="form-group">
-                <label className="form-label">Video Solution URL</label>
-                <input type="text" className="form-control" value={probVideo} onChange={(e) => setProbVideo(e.target.value)} placeholder="https://youtube.com/..." />
+                <label className="form-label">Hints (One per line)</label>
+                <textarea className="form-control" rows="2" value={probHints} onChange={(e) => setProbHints(e.target.value)} placeholder="Hint 1\nHint 2..." />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Video Solution URL</label>
+              <input type="text" className="form-control" value={probVideo} onChange={(e) => setProbVideo(e.target.value)} placeholder="https://youtube.com/..." />
             </div>
 
             {/* Test Cases Section */}
