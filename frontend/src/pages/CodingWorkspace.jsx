@@ -30,14 +30,24 @@ export default function CodingWorkspace() {
   const defaultTemplates = {
     python: "def main():\n    # Read input from stdin\n    # Example: n = int(input())\n    pass\n\nif __name__ == '__main__':\n    main()",
     javascript: "// The platform automatically injects __INPUT_LINES__ and __readline__()\n// Example: const n = parseInt(__readline__(), 10);\n\nfunction solve() {\n  \n}\nsolve();",
-    java: "import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        // Read input using scanner.nextLine(), etc.\n        \n    }\n}"
+    java: "import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        // Read input using scanner.nextLine(), etc.\n        \n    }\n}",
+    cpp: "#include <iostream>\nusing namespace std;\n\nint main() {\n    // Read input from stdin\n    // int n; cin >> n;\n    return 0;\n}",
+    c: "#include <stdio.h>\n\nint main() {\n    // Read input from stdin\n    // int n; scanf(\"%d\", &n);\n    return 0;\n}"
   };
 
   // Change starter code when language changes
   const handleLanguageChange = (newLang) => {
-    setCode(defaultTemplates[newLang] || '');
+    const savedCode = localStorage.getItem(`saved_code_${id}_${newLang}`);
+    setCode(savedCode || defaultTemplates[newLang] || '');
     setLanguage(newLang);
   };
+
+  // Auto-save user code to localStorage
+  useEffect(() => {
+    if (code && id && language) {
+      localStorage.setItem(`saved_code_${id}_${language}`, code);
+    }
+  }, [code, id, language]);
 
   // Load single problem details
   useEffect(() => {
@@ -50,13 +60,19 @@ export default function CodingWorkspace() {
           });
           setProblem(res.data);
           setResubmitMode(!res.data.is_solved);
-          if (res.data.last_code) {
-            setCode(res.data.last_code);
-          } else {
-            setCode(defaultTemplates[res.data.last_language || 'python']);
-          }
           if (res.data.last_language) {
             setLanguage(res.data.last_language);
+          }
+          
+          const targetLang = res.data.last_language || 'python';
+          const savedCode = localStorage.getItem(`saved_code_${id}_${targetLang}`);
+
+          if (savedCode) {
+            setCode(savedCode);
+          } else if (res.data.last_code) {
+            setCode(res.data.last_code);
+          } else {
+            setCode(defaultTemplates[targetLang]);
           }
           setOutputResults(null);
           fetchSubmissions();
@@ -265,8 +281,8 @@ export default function CodingWorkspace() {
                 <option value="python">Python 3</option>
                 <option value="javascript">JavaScript (Node)</option>
                 <option value="java">Java 21</option>
-                <option value="cpp">C++ (Simulated)</option>
-                <option value="c">C (Simulated)</option>
+                <option value="cpp">C++ (GCC)</option>
+                <option value="c">C (GCC)</option>
               </select>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -353,18 +369,17 @@ export default function CodingWorkspace() {
                        <div style={{ color: 'var(--color-danger)', whiteSpace: 'pre-wrap', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '4px' }}>
                         <strong>Runtime Error:</strong><br/>
                         {outputResults.data.runtimeError}
-                        <br/><br/><strong>Standard Error:</strong><br/>
-                        {outputResults.data.stderr}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div>
-                           <div style={{ color: '#6b7280', marginBottom: '0.2rem' }}>Output:</div>
+                           <div style={{ color: '#6b7280', marginBottom: '0.2rem' }}>Program Output:</div>
                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '4px', color: '#abb2bf', whiteSpace: 'pre-wrap' }}>{outputResults.data.stdout || 'No output'}</div>
                         </div>
                         <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
-                          <div><strong style={{ color: '#6b7280' }}>Time:</strong> {Math.floor(outputResults.data.executionTime)} ms</div>
-                          <div><strong style={{ color: '#6b7280' }}>Memory:</strong> {outputResults.data.memoryUsed} MB</div>
+                          <div><strong style={{ color: '#6b7280' }}>Time:</strong> {outputResults.data.executionTime}</div>
+                          <div><strong style={{ color: '#6b7280' }}>Memory:</strong> {outputResults.data.memory}</div>
+                          <div><strong style={{ color: '#6b7280' }}>Exit Code:</strong> {outputResults.data.exitCode}</div>
                         </div>
                       </div>
                     )}

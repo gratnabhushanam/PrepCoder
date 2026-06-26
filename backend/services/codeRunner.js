@@ -1,4 +1,4 @@
-const { runDockerCode } = require('./dockerRunner');
+const { runLocalCode } = require('./localCompiler');
 
 // Normalize and compare output strings
 function compareOutputs(out, exp) {
@@ -30,30 +30,30 @@ async function executeCode(problemTitle, language, userCode, testCases) {
       memory: 0
     };
 
-    const dockerResult = await runDockerCode({
+    const localResult = await runLocalCode({
       language,
       code: userCode,
       input: tc.input,
-      timeLimitMs: 5000,
+      timeLimitMs: 2000,
       memoryLimitMb: 256
     });
 
-    if (dockerResult.compileError) {
-      testResult.error = `Compilation Error:\n${dockerResult.compileError}`;
+    if (localResult.compileError) {
+      testResult.error = `Compilation Error:\n${localResult.compileError}`;
       results.push(testResult);
       // If compilation fails, we shouldn't test the remaining cases.
       // We will mark them all as compilation error.
       break; 
-    } else if (dockerResult.runtimeError) {
-      testResult.error = dockerResult.runtimeError;
+    } else if (localResult.runtimeError) {
+      testResult.error = localResult.runtimeError;
     } else {
-      const out = dockerResult.stdout.trim();
+      const out = localResult.stdout.trim();
       testResult.output = out;
       testResult.passed = compareOutputs(out, tc.expected);
     }
     
-    testResult.time = dockerResult.executionTime;
-    testResult.memory = dockerResult.memoryUsed;
+    testResult.time = localResult.executionTime;
+    testResult.memory = localResult.memoryUsed;
 
     results.push(testResult);
   }

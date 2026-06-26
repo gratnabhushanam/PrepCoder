@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { runDockerCode } = require('../services/dockerRunner');
+const { runLocalCode } = require('../services/localCompiler');
 
 // @route   POST /api/compiler/run
 // @desc    Execute arbitrary code with custom input
@@ -12,23 +12,23 @@ router.post('/run', async (req, res) => {
   }
 
   try {
-    const dockerResult = await runDockerCode({
+    const localResult = await runLocalCode({
       language,
       code,
       input: input || '',
-      timeLimitMs: 5000,
+      timeLimitMs: 2000,
       memoryLimitMb: 256
     });
 
-    // The requirements ask for: { success, stdout, stderr, compileError, runtimeError, executionTime, memoryUsed }
     res.json({
-      success: dockerResult.success,
-      stdout: dockerResult.stdout,
-      stderr: dockerResult.stderr,
-      compileError: dockerResult.compileError,
-      runtimeError: dockerResult.runtimeError,
-      executionTime: dockerResult.executionTime,
-      memoryUsed: dockerResult.memoryUsed
+      success: localResult.success,
+      stdout: localResult.stdout,
+      stderr: localResult.stderr,
+      compileError: localResult.compileError,
+      runtimeError: localResult.runtimeError,
+      executionTime: `${Math.floor(localResult.executionTime)} ms`,
+      memory: `${localResult.memoryUsed} MB`,
+      exitCode: localResult.exitCode
     });
 
   } catch (error) {

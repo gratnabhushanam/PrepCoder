@@ -219,6 +219,10 @@ router.post('/submit', protect, async (req, res) => {
           finalVerdict = 'Time Limit Exceeded';
         } else if (firstFailed.error.includes('Compilation Error')) {
           finalVerdict = 'Compilation Error';
+        } else if (firstFailed.error.includes('Memory Limit Exceeded')) {
+          finalVerdict = 'Memory Limit Exceeded';
+        } else if (firstFailed.error.includes('Output Limit Exceeded')) {
+          finalVerdict = 'Output Limit Exceeded';
         } else {
           finalVerdict = 'Runtime Error';
         }

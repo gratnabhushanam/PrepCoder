@@ -25,9 +25,9 @@ const DOCKER_IMAGES = {
 const runCommand = (cmd, args, stdinData, timeoutMs = 10000) => {
   return new Promise((resolve) => {
     const startTime = process.hrtime();
-    // Use shell on Windows to ensure docker command is found if it's in PATH, but typically direct execution is fine.
-    // We will use standard spawn.
-    const child = spawn(cmd, args, { shell: process.platform === 'win32' });
+    // Use standard spawn without shell to avoid argument splitting issues on Windows (e.g. paths with spaces)
+    // Node.js will automatically find docker.exe in the PATH.
+    const child = spawn(cmd, args, { shell: false });
 
     let stdout = '';
     let stderr = '';
