@@ -137,7 +137,7 @@ async function runLocalCode({ language, code, input = '', timeLimitMs = 2000, me
         break;
       case 'javascript':
         sourceFile = 'main.js';
-        const inputLines = input.trim().split('\\n').map(s => s.replace(/\\r$/, ''));
+        const inputLines = input.trim().split('\n').map(s => s.replace(/\r$/, ''));
         const harness = `
 const __INPUT_LINES__ = ${JSON.stringify(inputLines)};
 let __lineIdx__ = 0;
@@ -166,7 +166,7 @@ ${code}
     }
 
     // Step 2: Execution
-    const runRes = await runCommand(runCmd[0], runCmd[1], input + '\\n', timeLimitMs, runDir);
+    const runRes = await runCommand(runCmd[0], runCmd[1], input + '\n', timeLimitMs, runDir);
     
     result.executionTime = runRes.executionTime;
     result.stdout = runRes.stdout;
@@ -184,7 +184,7 @@ ${code}
       else if (runRes.code === 136 || runRes.code === 3221225620) errType = 'Division By Zero';
       else if (runRes.code === 137) errType = 'Memory Limit Exceeded';
 
-      result.runtimeError = \`\${errType} (Exit code: \${runRes.code})\\n\${runRes.stderr.trim()}\`.trim();
+      result.runtimeError = `${errType} (Exit code: ${runRes.code})\n${runRes.stderr.trim()}`.trim();
     } else {
       result.success = true;
     }
