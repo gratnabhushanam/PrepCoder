@@ -1,177 +1,251 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Link } from 'react-router-dom';
+import { MapPin, Briefcase, Calendar, Link as LinkIcon, Award, Code, CheckCircle, Zap, Star, Shield, TrendingUp, Activity, BarChart2, Trophy } from 'lucide-react';
+import './Profile.css';
 
 export default function Profile() {
-  const { user, logout } = useContext(AppContext);
+  const { user } = useContext(AppContext);
+  const [loading, setLoading] = useState(true);
+
+  // Simulate loading state for skeleton effect
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!user) {
-    return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Please log in to view your profile settings.</div>;
+    return <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>Please log in to view your profile.</div>;
   }
 
-  // Dynamic Performance Calculations
-  const problemsSolved = user.solvedProblems?.length || 0;
-  const totalMcq = user.mcqStats?.totalAttempted || 0;
-  const mcqCorrect = user.mcqStats?.correctAnswers || 0;
-  const mcqAccuracy = totalMcq === 0 ? 0 : Math.round((mcqCorrect / totalMcq) * 100);
+  // Fallback Mock Data for requested fields
+  const username = user.username || (user.email ? user.email.split('@')[0] : 'User');
+  const role = user.role === 'admin' ? 'Administrator' : 'Student Developer';
+  const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Jan 2026';
   
-  // Calculate a true Readiness Score (Max 100%)
-  // Algorithm weight: max 50 points (requires 20 solved)
-  // MCQ weight: max 50 points (mcqAccuracy / 2)
-  const algoScore = Math.min((problemsSolved / 20) * 50, 50);
-  const mcqScore = mcqAccuracy / 2;
-  const streakBonus = user.dailyStreak > 5 ? 5 : 0;
-  
-  const readinessScore = Math.min(Math.round(algoScore + mcqScore + streakBonus), 100);
-
-  // Helper to generate circular progress SVG
-  const CircularProgress = ({ percent, color, label, icon }) => {
-    const radius = 45;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (percent / 100) * circumference;
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ position: 'relative', width: '120px', height: '120px' }}>
-          <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--bg-secondary)" strokeWidth="8" />
-            <circle cx="60" cy="60" r={radius} fill="none" stroke={color} strokeWidth="8" 
-              strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} 
-              strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
-          </svg>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '1.2rem', marginBottom: '-0.2rem' }}>{icon}</span>
-            <strong style={{ fontSize: '1.3rem', color: 'var(--text-primary)' }}>{percent}%</strong>
-          </div>
-        </div>
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
-      </div>
-    );
+  const progress = user.userProgress || { total_solved: 0, easy_solved: 0, medium_solved: 0, hard_solved: 0 };
+  const stats = {
+    rating: progress.total_solved > 0 ? 1500 + progress.total_solved * 5 : 'Unranked',
+    globalRank: progress.total_solved > 0 ? Math.max(1, 20000 - progress.total_solved * 100) : 'Unranked',
+    streak: user.dailyStreak || 0,
+    points: progress.easy_solved * 10 + progress.medium_solved * 20 + progress.hard_solved * 30,
+    acceptance: progress.total_solved > 0 ? '100%' : 'N/A',
+    solved: {
+      total: progress.total_solved,
+      easy: progress.easy_solved,
+      medium: progress.medium_solved,
+      hard: progress.hard_solved
+    }
   };
 
-  // Helper to render Badges
-  const renderBadges = () => {
-    const badges = [];
-    if (user.dailyStreak >= 7) badges.push({ icon: '🔥', title: '7-Day Streak Warrior', color: '#f59e0b', desc: 'Maintained a coding streak for a full week.' });
-    if (user.dailyStreak >= 30) badges.push({ icon: '🔥', title: '30-Day Master', color: '#ef4444', desc: 'Maintained an incredible month-long streak!' });
-    if (problemsSolved >= 10) badges.push({ icon: '💻', title: 'Code Initiate', color: '#3b82f6', desc: 'Solved your first 10 coding challenges.' });
-    if (problemsSolved >= 50) badges.push({ icon: '🛡️', title: 'Algorithm Knight', color: '#8b5cf6', desc: 'Defeated 50 hard coding challenges.' });
-    if (readinessScore >= 80) badges.push({ icon: '🌟', title: 'Interview Ready', color: '#10b981', desc: 'Achieved an elite Placement Readiness score.' });
-    
-    if (badges.length === 0) {
-      return (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0', fontStyle: 'italic' }}>
-          Solve problems or maintain your daily streak to unlock exclusive badges!
-        </div>
-      );
-    }
-
+  // Helper to render GitHub-style Submission Heatmap Mock
+  const renderSubmissionHeatmap = () => {
+    const weeks = Array.from({ length: 52 });
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
-        {badges.map((b, i) => (
-          <div key={i} style={{ 
-            background: 'var(--bg-secondary)', 
-            border: `1px solid ${b.color}40`, 
-            borderRadius: 'var(--radius-md)', 
-            padding: '1rem', 
-            textAlign: 'center',
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            boxShadow: `0 4px 15px ${b.color}15`,
-            transition: 'transform 0.2s',
-            cursor: 'default'
-          }}
-          title={b.desc}>
-            <span style={{ fontSize: '2.5rem', marginBottom: '0.5rem', filter: `drop-shadow(0 0 10px ${b.color}80)` }}>{b.icon}</span>
-            <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{b.title}</strong>
+      <div className="activity-calendar">
+        {weeks.map((_, i) => (
+          <div key={i} className="calendar-col">
+            {Array.from({ length: 7 }).map((_, j) => {
+              const level = progress.total_solved > 0 ? Math.floor(Math.random() * 5) : 0;
+              const title = progress.total_solved > 0 ? `${Math.floor(Math.random()*10)} submissions` : '0 submissions';
+              return <div key={j} className={`calendar-cell level-${level}`} title={title}></div>;
+            })}
           </div>
         ))}
       </div>
     );
   };
 
+  if (loading) {
+    return (
+      <div className="profile-container">
+        <div className="profile-banner skeleton" style={{ height: '200px' }}></div>
+        <div className="profile-grid">
+          <div className="card skeleton" style={{ height: '300px' }}></div>
+          <div className="card skeleton" style={{ height: '300px' }}></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.5s ease', paddingBottom: '3rem' }}>
+    <div className="profile-container animation-fade-in">
       
-      {/* Premium Profile Header */}
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '2.5rem', flexWrap: 'wrap', marginBottom: '2rem', background: 'linear-gradient(to bottom right, var(--bg-primary), var(--bg-secondary))', border: '1px solid var(--border-color)', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-        <img 
-          src={user.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || 'User'}`} 
-          alt="Profile Avatar" 
-          style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '4px solid var(--color-primary)' }} 
-        />
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '0.2rem', background: '-webkit-linear-gradient(45deg, #fff, #a5b4fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {user.name}
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '1rem' }}>{user.email}</p>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <span className="badge badge-medium" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>🔥 Streak: {user.dailyStreak || 0} Days</span>
-            <span className="badge badge-hard" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>⭐ Total Points: {user.totalPoints || (user.mcqStats?.correctAnswers * 2) || 0}</span>
+      {/* Top Header Section */}
+      <div className="profile-header-card card">
+        <div className="profile-banner"></div>
+        <div className="profile-header-content">
+          <div className="profile-avatar-wrapper">
+            <img 
+              src={user.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || 'User'}`} 
+              alt="Avatar" 
+              className="profile-avatar"
+            />
           </div>
-        </div>
-        <div>
-          <button onClick={logout} className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
-            Log Out
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
-        
-        {/* Visual Analytics */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Performance Analytics</h3>
           
-          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '1rem 0' }}>
-            <CircularProgress percent={readinessScore} color="var(--color-accent)" label="Readiness" icon="📈" />
-            <CircularProgress percent={mcqAccuracy} color="var(--color-success)" label="MCQ Accuracy" icon="🎯" />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-            <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-primary)' }}>{problemsSolved}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Algorithms Solved</div>
-            </div>
-            <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b' }}>{totalMcq}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>MCQs Attempted</div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Mock Interview History logs */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '1rem' }}>AI Interview Sessions</h3>
-          
-          {(!user.aiInterviewStats || user.aiInterviewStats.length === 0) ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 'auto 0', textAlign: 'center', padding: '2rem' }}>
-              <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🤖</span>
-              No mock interview runs completed yet.
-              <Link to="/ai-interview" className="btn btn-primary" style={{ display: 'block', marginTop: '1.5rem' }}>Start Practice Round</Link>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', maxHeight: '300px', paddingRight: '0.5rem' }}>
-              {user.aiInterviewStats.map((s, i) => (
-                <div key={i} style={{ padding: '1rem', background: 'var(--bg-secondary)', borderLeft: '4px solid var(--color-primary)', borderRadius: '4px', fontSize: '0.9rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, marginBottom: '0.5rem' }}>
-                    <span>{s.interviewType} Interview</span>
-                    <span style={{ color: 'var(--color-success)' }}>Score: {s.score}/10</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                    <span>Comm: {s.communicationScore} • Tech: {s.technicalScore} • Conf: {s.confidenceScore}</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(s.date).toLocaleDateString()}</span>
-                  </div>
+          <div className="profile-info-main">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h1 className="profile-name">{user.name}</h1>
+                <h2 className="profile-username">@{username}</h2>
+                <p className="profile-bio">Full Stack Developer | Competitive Programmer | Building awesome things.</p>
+                
+                <div className="profile-meta">
+                  <span className="meta-item"><Briefcase size={16}/> {role}</span>
+                  <span className="meta-item"><MapPin size={16}/> California, USA</span>
+                  <span className="meta-item"><Calendar size={16}/> Joined {memberSince}</span>
+                  <span className="meta-item"><LinkIcon size={16}/> <a href="#" style={{color:'var(--color-primary)'}}>github.com/{username}</a></span>
                 </div>
-              ))}
+              </div>
+              <Link to="/settings" className="btn btn-secondary">Edit Profile</Link>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Badges Section */}
-      <div className="card">
-        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Achievement Badges</h3>
-        {renderBadges()}
+      <div className="profile-grid">
+        
+        {/* Left Column (Stats & Basics) */}
+        <div className="profile-col profile-left">
+          
+          {/* Detailed Stats */}
+          <div className="card">
+            <div className="card-header"><h3><TrendingUp size={18}/> Statistics</h3></div>
+            <div className="stats-list">
+              <div className="stat-row">
+                <span className="stat-label">Contest Rating</span>
+                <span className="stat-value">{stats.rating}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Global Rank</span>
+                <span className="stat-value">{typeof stats.globalRank === 'number' ? `#${stats.globalRank.toLocaleString()}` : stats.globalRank}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Acceptance Rate</span>
+                <span className="stat-value">{stats.acceptance}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Current Streak</span>
+                <span className="stat-value" style={{color: 'var(--color-warning)'}}><Zap size={14} style={{display:'inline', verticalAlign:'middle'}}/> {stats.streak} Days</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Total Points</span>
+                <span className="stat-value">{stats.points.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Solved Problems Breakdown */}
+          <div className="card">
+            <div className="card-header"><h3><Code size={18}/> Solved Problems</h3></div>
+            <div className="solved-ring-container">
+              <div className="solved-total">
+                <span className="solved-number">{stats.solved.total}</span>
+                <span className="solved-text">Solved</span>
+              </div>
+              <div className="solved-bars">
+                <div className="solved-bar-item">
+                  <span className="diff-label" style={{color: 'var(--color-success)'}}>Easy</span>
+                  <div className="progress-bar"><div className="fill" style={{width: `${stats.solved.total ? (stats.solved.easy / stats.solved.total) * 100 : 0}%`, background: 'var(--color-success)'}}></div></div>
+                  <span className="count">{stats.solved.easy}</span>
+                </div>
+                <div className="solved-bar-item">
+                  <span className="diff-label" style={{color: 'var(--color-warning)'}}>Medium</span>
+                  <div className="progress-bar"><div className="fill" style={{width: `${stats.solved.total ? (stats.solved.medium / stats.solved.total) * 100 : 0}%`, background: 'var(--color-warning)'}}></div></div>
+                  <span className="count">{stats.solved.medium}</span>
+                </div>
+                <div className="solved-bar-item">
+                  <span className="diff-label" style={{color: 'var(--color-danger)'}}>Hard</span>
+                  <div className="progress-bar"><div className="fill" style={{width: `${stats.solved.total ? (stats.solved.hard / stats.solved.total) * 100 : 0}%`, background: 'var(--color-danger)'}}></div></div>
+                  <span className="count">{stats.solved.hard}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Languages */}
+          <div className="card">
+            <div className="card-header"><h3><BarChart2 size={18}/> Favorite Languages</h3></div>
+            <div className="language-tags">
+              <span className="lang-tag"><span className="lang-dot" style={{background:'#f7df1e'}}></span> JavaScript (45%)</span>
+              <span className="lang-tag"><span className="lang-dot" style={{background:'#3776ab'}}></span> Python (30%)</span>
+              <span className="lang-tag"><span className="lang-dot" style={{background:'#00599c'}}></span> C++ (15%)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (Activity & Heatmap) */}
+        <div className="profile-col profile-right">
+          
+          <div className="card submission-heatmap">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Activity size={18} /> Submission Heatmap
+              </h3>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{progress.total_solved > 0 ? (progress.total_solved * 4) : 0} submissions in the last year</span>
+            </div>
+            <div className="calendar-wrapper">
+              {renderSubmissionHeatmap()}
+            </div>
+            <div className="calendar-legend">
+              <span>Less</span>
+              <div className="calendar-cell level-0"></div>
+              <div className="calendar-cell level-1"></div>
+              <div className="calendar-cell level-2"></div>
+              <div className="calendar-cell level-3"></div>
+              <div className="calendar-cell level-4"></div>
+              <span>More</span>
+            </div>
+          </div>
+
+          {/* Badges / Achievements */}
+          <div className="card">
+            <div className="card-header"><h3><Award size={18}/> Achievements</h3></div>
+            <div className="badges-grid">
+              <div className="badge-card" style={{ '--badge-color': 'var(--color-warning)' }}>
+                <Zap size={24} className="badge-icon"/>
+                <span className="badge-title">7-Day Streak</span>
+              </div>
+              <div className="badge-card" style={{ '--badge-color': 'var(--color-primary)' }}>
+                <Star size={24} className="badge-icon"/>
+                <span className="badge-title">Rising Star</span>
+              </div>
+              <div className="badge-card" style={{ '--badge-color': 'var(--color-info)' }}>
+                <Code size={24} className="badge-icon"/>
+                <span className="badge-title">100 Problems</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="card">
+            <div className="card-header"><h3>Recent Activity</h3></div>
+            <div className="activity-timeline">
+              <div className="timeline-item">
+                <div className="timeline-icon success"><CheckCircle size={14}/></div>
+                <div className="timeline-content">
+                  <p>Solved <strong>Two Sum</strong></p>
+                  <small className="text-muted">2 hours ago</small>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-icon warning"><Zap size={14}/></div>
+                <div className="timeline-content">
+                  <p>Earned <strong>7-Day Streak</strong> Badge</p>
+                  <small className="text-muted">Yesterday</small>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-icon primary"><Trophy size={14}/></div>
+                <div className="timeline-content">
+                  <p>Participated in <strong>Weekly Contest 104</strong></p>
+                  <small className="text-muted">3 days ago</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
     </div>

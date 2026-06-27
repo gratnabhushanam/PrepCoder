@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { getCompilerConfig } = require('./compilerConfig');
 
 const SANDBOX_DIR = path.join(__dirname, '../sandbox');
 
@@ -94,6 +95,9 @@ async function runLocalCode({ language, code, input = '', timeLimitMs = 2000, me
   const id = Math.random().toString(36).substr(2, 9) + Date.now();
   const runDir = path.join(SANDBOX_DIR, `run_${id}`);
   fs.mkdirSync(runDir, { recursive: true });
+  
+  const crypto = require('crypto');
+  const codeHash = crypto.createHash('sha256').update(code).digest('hex').substring(0, 8);
 
   const result = {
     success: false,
@@ -110,47 +114,116 @@ async function runLocalCode({ language, code, input = '', timeLimitMs = 2000, me
     let compileCmd = null;
     let runCmd = null;
     let sourceFile = '';
+    const config = getCompilerConfig();
     
     switch (language) {
       case 'c':
         sourceFile = 'main.c';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = ['gcc', [sourceFile, '-o', 'main']];
+        compileCmd = [config.gcc, [sourceFile, '-o', 'main']];
         runCmd = [isWin ? path.join(runDir, 'main.exe') : path.join(runDir, 'main'), []];
         break;
       case 'cpp':
         sourceFile = 'main.cpp';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = ['g++', [sourceFile, '-o', 'main']];
+        compileCmd = [config.gpp, [sourceFile, '-o', 'main']];
         runCmd = [isWin ? path.join(runDir, 'main.exe') : path.join(runDir, 'main'), []];
         break;
       case 'java':
-        sourceFile = 'Main.java';
+        sourceFile = 'Main.java'; // NOTE: The class must be named Solution or Main. We assume Main here for compiler unless modified.
+        // Quick patch if class is Solution but file is Main
+        if (code.includes('class Solution')) {
+          sourceFile = 'Solution.java';
+        } else if (code.includes('class Program')) {
+          sourceFile = 'Program.java';
+        }
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = ['javac', [sourceFile]];
-        runCmd = ['java', ['Main']];
+        compileCmd = [config.javac, [sourceFile]];
+        runCmd = [config.java, [sourceFile.replace('.java', '')]];
         break;
       case 'python':
         sourceFile = 'main.py';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        runCmd = [PYTHON_CMD, [sourceFile]];
+        compileCmd = [config.python, ['-m', 'py_compile', sourceFile]];
+        runCmd = [config.python, [sourceFile]];
         break;
       case 'javascript':
         sourceFile = 'main.js';
-        const inputLines = input.trim().split('\n').map(s => s.replace(/\r$/, ''));
-        const harness = `
-const __INPUT_LINES__ = ${JSON.stringify(inputLines)};
+        const jsLines = input.trim().split('\n').map(s => s.replace(/\r$/, ''));
+        const jsHarness = `
+const __INPUT_LINES__ = ${JSON.stringify(jsLines)};
 let __lineIdx__ = 0;
 const __readline__ = () => __INPUT_LINES__[__lineIdx__++] || '';
 ${code}
 `;
-        fs.writeFileSync(path.join(runDir, sourceFile), harness);
-        runCmd = ['node', [sourceFile]];
+        fs.writeFileSync(path.join(runDir, sourceFile), jsHarness);
+        compileCmd = [config.node, ['-c', sourceFile]];
+        runCmd = [config.node, [sourceFile]];
+        break;
+      case 'typescript':
+        sourceFile = 'main.ts';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        // We assume npx ts-node is available globally or fallback to tsc
+        // Note: For simplicity without installing TS locally per sandbox, we can just use ts-node
+        compileCmd = null; // direct run via ts-node or npx
+        runCmd = [isWin ? 'npx.cmd' : 'npx', ['ts-node', sourceFile]];
+        break;
+      case 'go':
+        sourceFile = 'main.go';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        compileCmd = ['go', ['build', '-o', isWin ? 'main.exe' : 'main', sourceFile]];
+        runCmd = [isWin ? path.join(runDir, 'main.exe') : path.join(runDir, 'main'), []];
+        break;
+      case 'rust':
+        sourceFile = 'main.rs';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        compileCmd = ['rustc', [sourceFile, '-o', isWin ? 'main.exe' : 'main']];
+        runCmd = [isWin ? path.join(runDir, 'main.exe') : path.join(runDir, 'main'), []];
+        break;
+      case 'kotlin':
+        sourceFile = 'main.kt';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        compileCmd = ['kotlinc', [sourceFile, '-include-runtime', '-d', 'main.jar']];
+        runCmd = ['java', ['-jar', 'main.jar']];
+        break;
+      case 'php':
+        sourceFile = 'main.php';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        compileCmd = ['php', ['-l', sourceFile]]; // Linting
+        runCmd = ['php', [sourceFile]];
+        break;
+      case 'ruby':
+        sourceFile = 'main.rb';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        compileCmd = ['ruby', ['-c', sourceFile]]; // Syntax check
+        runCmd = ['ruby', [sourceFile]];
+        break;
+      case 'swift':
+        sourceFile = 'main.swift';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        compileCmd = ['swiftc', [sourceFile, '-o', 'main']];
+        runCmd = [path.join(runDir, 'main'), []];
+        break;
+      case 'csharp':
+        sourceFile = 'main.cs';
+        fs.writeFileSync(path.join(runDir, sourceFile), code);
+        // csc is the C# compiler on windows (usually via Mono or built-in .NET SDK)
+        compileCmd = ['csc', ['-out:main.exe', sourceFile]];
+        runCmd = [isWin ? path.join(runDir, 'main.exe') : 'mono', isWin ? [] : [path.join(runDir, 'main.exe')]];
         break;
       default:
         result.compileError = `Language '${language}' is not supported.`;
         return result;
     }
+
+    console.log(`\n--- EXECUTION AUDIT LOG ---`);
+    console.log(`Run ID: ${id}`);
+    console.log(`Source Code Hash: ${codeHash}`);
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    console.log(`Language: ${language}`);
+    console.log(`Compiler Cmd: ${compileCmd ? compileCmd[0] : 'N/A'}`);
+    console.log(`Temporary File Path: ${path.join(runDir, sourceFile)}`);
+    console.log(`---------------------------\n`);
 
     // Step 1: Compilation (if needed)
     if (compileCmd) {

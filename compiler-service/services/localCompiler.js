@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { getCompilerConfig } = require('./compilerConfig');
 
 const SANDBOX_DIR = path.join(__dirname, '../sandbox');
 
@@ -110,31 +111,32 @@ async function runLocalCode({ language, code, input = '', timeLimitMs = 2000, me
     let compileCmd = null;
     let runCmd = null;
     let sourceFile = '';
+    const config = getCompilerConfig();
     
     switch (language) {
       case 'c':
         sourceFile = 'main.c';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = ['gcc', [sourceFile, '-o', 'main']];
+        compileCmd = [config.gcc, [sourceFile, '-o', 'main']];
         runCmd = [isWin ? path.join(runDir, 'main.exe') : path.join(runDir, 'main'), []];
         break;
       case 'cpp':
         sourceFile = 'main.cpp';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = ['g++', [sourceFile, '-o', 'main']];
+        compileCmd = [config.gpp, [sourceFile, '-o', 'main']];
         runCmd = [isWin ? path.join(runDir, 'main.exe') : path.join(runDir, 'main'), []];
         break;
       case 'java':
         sourceFile = 'Main.java';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = ['javac', [sourceFile]];
-        runCmd = ['java', ['Main']];
+        compileCmd = [config.javac, [sourceFile]];
+        runCmd = [config.java, ['Main']];
         break;
       case 'python':
         sourceFile = 'main.py';
         fs.writeFileSync(path.join(runDir, sourceFile), code);
-        compileCmd = [PYTHON_CMD, ['-m', 'py_compile', sourceFile]];
-        runCmd = [PYTHON_CMD, [sourceFile]];
+        compileCmd = [config.python, ['-m', 'py_compile', sourceFile]];
+        runCmd = [config.python, [sourceFile]];
         break;
       case 'javascript':
         sourceFile = 'main.js';
@@ -146,8 +148,8 @@ const __readline__ = () => __INPUT_LINES__[__lineIdx__++] || '';
 ${code}
 `;
         fs.writeFileSync(path.join(runDir, sourceFile), harness);
-        compileCmd = ['node', ['-c', sourceFile]];
-        runCmd = ['node', [sourceFile]];
+        compileCmd = [config.node, ['-c', sourceFile]];
+        runCmd = [config.node, [sourceFile]];
         break;
       default:
         result.compileError = `Language '${language}' is not supported.`;

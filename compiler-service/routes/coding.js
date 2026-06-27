@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { db: { Concept, Question, Submission, User }, protect, syncUserStats } = require('shared');
 const { executeCode } = require('../services/codeRunner');
+const { submissionQueue } = require('../queues/submissionQueue');
 
 // @route   GET /api/coding/concepts
 // @desc    Get all concepts and user progress
@@ -47,6 +48,59 @@ router.get('/concepts', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// @route   POST /api/coding/submit
+// @desc    Submit code, evaluate all cases, save submission
+router.post('/submit', protect, async (req, res) => {
+  const { problemId, language, code } = req.body;
+  const userId = req.user._id || req.user.id;
+
+  if (!problemId || !language || !code) return res.status(400).json({ message: 'Missing fields' });
+
+  try {
+    const question = await Question.findById(problemId).lean();
+    if (!question) return res.status(404).json({ message: 'Problem not found' });
+
+    const publicCases = (question.public_testcases || []).map(tc => ({ input: tc.input, expected: tc.expected_output, isHidden: false }));
+    const hiddenCases = (question.hidden_testcases || []).map(tc => ({ input: tc.input, expected: tc.expected_output, isHidden: true }));
+    
+    const allCases = [...publicCases, ...hiddenCases];
+
+    // 1. Save Pending Submission
+    const submission = new Submission({
+      user_id: userId,
+      question_id: problemId,
+      code,
+      language,
+      status: 'Pending',
+      passed_cases: 0,
+      total_cases: allCases.length,
+      execution_time: 0,
+      memory_used: 0
+    });
+    await submission.save();
+
+    // 2. Add job to Queue
+    await submissionQueue.add('submission', {
+      submissionId: submission._id,
+      userId,
+      questionId: problemId,
+      code,
+      language,
+      cases: allCases
+    });
+
+    res.json({
+      status: 'Pending',
+      submissionId: submission._id,
+      message: 'Submission enqueued successfully'
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Submission processing failed' });
   }
 });
 

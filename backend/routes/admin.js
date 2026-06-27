@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { User, Mcq, Question, Submission, Company, PlatformSettings } = require('../config/db');
+const { User, Mcq, Question, Submission, Company, PlatformSettings, Concept } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
+const { getCompilerConfig, updateCompilerConfig } = require('../services/compilerConfig');
 
 // @route   GET /api/admin/analytics
 // @desc    Retrieve aggregated system-wide analytics
@@ -358,6 +359,82 @@ router.put('/settings', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// @route   GET /api/admin/compiler-config
+// @desc    Get current compiler paths configuration
+router.get('/compiler-config', protect, async (req, res) => {
+  try {
+    const config = getCompilerConfig();
+    res.json(config);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// @route   PUT /api/admin/compiler-config
+// @desc    Update compiler paths configuration
+router.put('/compiler-config', protect, async (req, res) => {
+  try {
+    const updatedConfig = updateCompilerConfig(req.body);
+    res.json(updatedConfig);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// @route   POST /api/admin/coding/concepts
+// @desc    Add new Concept
+router.post('/coding/concepts', protect, async (req, res) => {
+  const { name, description, icon } = req.body;
+  if (!name) {
+    return res.status(400).json({ message: 'Concept name is required' });
+  }
+
+  try {
+    const newConcept = await Concept.create({
+      name,
+      description,
+      icon
+    });
+    res.status(201).json(newConcept);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to create concept' });
+  }
+});
+
+// @route   POST /api/admin/coding/questions
+// @desc    Add new Coding Problem (Matching Admin Dashboard UI)
+router.post('/coding/questions', protect, async (req, res) => {
+  const { concept_id, title, statement, difficulty, constraints, input_format, output_format, editorial, hints, video_solution, companies, public_testcases, hidden_testcases } = req.body;
+  if (!title || !statement || !difficulty) {
+    return res.status(400).json({ message: 'Title, statement, and difficulty are required.' });
+  }
+
+  try {
+    const newProb = await Question.create({
+      concept_id: concept_id || null,
+      title,
+      statement,
+      difficulty,
+      constraints,
+      input_format,
+      output_format,
+      editorial,
+      hints,
+      video_solution,
+      companies: companies || [],
+      public_testcases: public_testcases || [],
+      hidden_testcases: hidden_testcases || []
+    });
+    res.status(201).json(newProb);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to create coding problem' });
   }
 });
 

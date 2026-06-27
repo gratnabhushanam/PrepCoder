@@ -1,19 +1,24 @@
 const { Queue, Worker } = require('bullmq');
-const redisClient = require('../config/redis');
+const Redis = require('ioredis');
 const { executeCode } = require('../services/codeRunner');
-const { Submission, User, Question } = require('../config/db');
-const { syncUserStats } = require('../utils/statsUpdater');
+const { db: { Submission, User, Question }, syncUserStats } = require('shared');
 
-let submissionQueue = null;
+// We need a redis connection for BullMQ
+// We will attempt to use process.env.REDIS_URL or fallback to localhost
+const redisOptions = {
+  host: process.env.REDIS_HOST || '127.0.0.1',
+  port: process.env.REDIS_PORT || 6379,
+  maxRetriesPerRequest: null // Required for BullMQ
+};
 
-redisClient.on('ready', () => {
-  if (!submissionQueue) {
-    submissionQueue = new Queue('code-submissions', { connection: redisClient });
-  }
-});
+const connection = new Redis(redisOptions);
 
-const processSubmission = async (jobData, io) => {
-    const { submissionId, userId, questionId, code, language, cases } = jobData;
+const submissionQueue = new Queue('compiler-submissions', { connection });
+
+// Initialize the worker separately in a function so we can pass 'io' for WebSockets
+const initSubmissionWorker = (io) => {
+  const worker = new Worker('compiler-submissions', async (job) => {
+    const { submissionId, userId, questionId, code, language, cases } = job.data;
     
     const emitStatus = (statusData) => {
         if (io) {
@@ -28,12 +33,12 @@ const processSubmission = async (jobData, io) => {
       const results = await executeCode('Submission', language, code, cases);
       
       const totalCases = cases.length;
-      const passedCases = results.filter(r => r.passed || r.status === 'Accepted').length;
+      const passedCases = results.filter(r => r.passed).length;
       const isAccepted = passedCases === totalCases;
       
       let finalVerdict = 'Accepted';
       if (!isAccepted) {
-        const firstFailed = results.find(r => (!r.passed && r.status !== 'Accepted'));
+        const firstFailed = results.find(r => !r.passed);
         if (firstFailed?.error) {
           if (firstFailed.error.includes('Time Limit Exceeded') || firstFailed.error.includes('timed out')) {
             finalVerdict = 'Time Limit Exceeded';
@@ -54,6 +59,7 @@ const processSubmission = async (jobData, io) => {
       const executionTime = Math.max(...results.map(r => r.time || 0), 0);
       const memory = Math.max(...results.map(r => r.memory || 0), 0);
 
+      // Update the pending submission in the DB
       const submission = await Submission.findById(submissionId);
       if (submission) {
         submission.status = finalVerdict;
@@ -64,28 +70,8 @@ const processSubmission = async (jobData, io) => {
         await submission.save();
       }
 
-      let runtimePercentile = 0;
-      let memoryPercentile = 0;
-
+      // If Accepted, update user stats
       if (isAccepted) {
-        // Calculate percentiles based on other accepted submissions for this question in the same language
-        const allAcceptedSubs = await Submission.find({ 
-            question_id: questionId, 
-            status: 'Accepted',
-            language: language 
-        }).lean();
-
-        if (allAcceptedSubs.length > 1) {
-            const slowerSubs = allAcceptedSubs.filter(s => s.execution_time > executionTime).length;
-            runtimePercentile = Math.max(1, Math.round((slowerSubs / allAcceptedSubs.length) * 100));
-
-            const heavierSubs = allAcceptedSubs.filter(s => s.memory_used > memory).length;
-            memoryPercentile = Math.max(1, Math.round((heavierSubs / allAcceptedSubs.length) * 100));
-        } else {
-            runtimePercentile = 100;
-            memoryPercentile = 100;
-        }
-
         const user = await User.findById(userId);
         if (user && !user.solvedProblems?.includes(questionId.toString())) {
           if (!user.solvedProblems) user.solvedProblems = [];
@@ -108,10 +94,6 @@ const processSubmission = async (jobData, io) => {
         }
       }
 
-      const maskedResults = results.map(r => 
-        r.isHidden ? { ...r, input: '******', expected: '******', output: '******' } : r
-      );
-
       emitStatus({ 
           status: 'Completed', 
           verdict: finalVerdict,
@@ -119,15 +101,13 @@ const processSubmission = async (jobData, io) => {
           totalCases,
           executionTime,
           memory,
-          results: maskedResults,
-          runtimePercentile,
-          memoryPercentile
+          results
       });
 
       return { verdict: finalVerdict };
 
     } catch (error) {
-      console.error(`Submission process failed:`, error);
+      console.error(`Job ${job.id} failed:`, error);
       
       const submission = await Submission.findById(submissionId);
       if (submission) {
@@ -138,20 +118,7 @@ const processSubmission = async (jobData, io) => {
       emitStatus({ status: 'Error', message: 'Internal Server Error during execution' });
       throw error;
     }
-};
-
-const submissionWorker = (io) => {
-  if (redisClient.status !== 'ready') {
-    // Only initialize the BullMQ worker when Redis is connected to prevent ECONNREFUSED spam
-    redisClient.once('ready', () => {
-      submissionWorker(io);
-    });
-    return;
-  }
-
-  const worker = new Worker('code-submissions', async (job) => {
-    return await processSubmission(job.data, io);
-  }, { connection: redisClient });
+  }, { connection });
 
   worker.on('failed', (job, err) => {
     console.error(`Submission Job ${job.id} failed:`, err);
@@ -160,8 +127,7 @@ const submissionWorker = (io) => {
   return worker;
 };
 
-module.exports = { 
-  get submissionQueue() { return submissionQueue; }, 
-  submissionWorker, 
-  processSubmission 
+module.exports = {
+  submissionQueue,
+  initSubmissionWorker
 };

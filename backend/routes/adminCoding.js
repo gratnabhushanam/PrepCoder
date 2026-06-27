@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Concept, Question, User } = require('../config/db');
+const { Concept, Question, User, Contest } = require('../config/db');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // Add Concept
@@ -14,6 +14,52 @@ router.post('/concepts', protect, adminOnly, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to add concept' });
+  }
+});
+
+// Delete User
+router.delete('/users/:id', protect, adminOnly, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+// --- CONTEST ROUTES ---
+
+// Create Contest
+router.post('/contests', protect, adminOnly, async (req, res) => {
+  try {
+    const { title, description, startTime, endTime, duration, questions, status } = req.body;
+    if (!title || !startTime || !endTime || !duration) {
+      return res.status(400).json({ message: 'Missing required contest fields' });
+    }
+    
+    const newContest = await Contest.create({
+      title, description, startTime, endTime, duration, questions, status
+    });
+    
+    res.status(201).json({ message: 'Contest created successfully', id: newContest._id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to create contest' });
+  }
+});
+
+// Get Contests (Admin view)
+router.get('/contests', protect, adminOnly, async (req, res) => {
+  try {
+    const contests = await Contest.find({ isDeleted: { $ne: true } })
+      .populate('questions', 'title difficulty')
+      .sort({ startTime: -1 })
+      .lean();
+    res.json(contests);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch contests' });
   }
 });
 

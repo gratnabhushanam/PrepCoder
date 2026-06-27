@@ -25,12 +25,12 @@ router.get('/', async (req, res) => {
       statsList = await UserStats.find().populate('userId', 'name role').sort({ totalPoints: -1 }).limit(100).lean();
       
       // Async rebuild Redis in background
-      if (statsList.length > 0) {
+      if (statsList.length > 0 && redisClient.status === 'ready') {
         const pipeline = redisClient.pipeline();
         statsList.forEach(s => {
           pipeline.zadd('leaderboard:global', s.totalPoints, s.userId.toString());
         });
-        pipeline.exec();
+        pipeline.exec().catch(err => console.warn('Failed to rebuild Redis leaderboard in background'));
       }
     }
 

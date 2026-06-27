@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const { Concept, Question, Submission, User } = require('../config/db');
+const { Concept, Question, Submission, User, Contest } = require('../config/db');
 const { executeCode } = require('../services/codeRunner');
 const { syncUserStats } = require('../utils/statsUpdater');
 const { protect } = require('../middleware/authMiddleware');
+const redisClient = require('../config/redis');
+const { submissionQueue, processSubmission } = require('../queues/submissionQueue');
 
 // @route   GET /api/coding/concepts
 // @desc    Get all concepts and user progress
@@ -187,6 +189,23 @@ router.post('/run', async (req, res) => {
   }
 });
 
+// @route   GET /api/coding/submissions
+// @desc    Get user submissions history
+router.get('/submissions', protect, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const submissions = await Submission.find({ user_id: userId })
+      .sort({ createdAt: -1 })
+      .populate('question_id', 'title difficulty concept_id')
+      .lean();
+    
+    res.json(submissions);
+  } catch (error) {
+    console.error('Fetch submissions error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // @route   POST /api/coding/submit
 // @desc    Submit code, evaluate all cases, save submission
 router.post('/submit', protect, async (req, res) => {
@@ -204,100 +223,42 @@ router.post('/submit', protect, async (req, res) => {
     
     const allCases = [...publicCases, ...hiddenCases];
 
-    // Synchronous execution fallback (No Redis required)
-    const results = await executeCode('Submission', language, code, allCases);
-    
-    const totalCases = allCases.length;
-    const passedCases = results.filter(r => r.passed).length;
-    const isAccepted = passedCases === totalCases;
-    
-    let finalVerdict = 'Accepted';
-    if (!isAccepted) {
-      const firstFailed = results.find(r => !r.passed);
-      if (firstFailed?.error) {
-        if (firstFailed.error.includes('Time Limit Exceeded') || firstFailed.error.includes('timed out')) {
-          finalVerdict = 'Time Limit Exceeded';
-        } else if (firstFailed.error.includes('Compilation Error')) {
-          finalVerdict = 'Compilation Error';
-        } else if (firstFailed.error.includes('Memory Limit Exceeded')) {
-          finalVerdict = 'Memory Limit Exceeded';
-        } else if (firstFailed.error.includes('Output Limit Exceeded')) {
-          finalVerdict = 'Output Limit Exceeded';
-        } else {
-          finalVerdict = 'Runtime Error';
-        }
-      } else {
-        finalVerdict = 'Wrong Answer';
-      }
-    }
-
-    // Save Submission
+    // 1. Save Pending Submission
     const submission = new Submission({
       user_id: userId,
       question_id: problemId,
       code,
       language,
-      status: finalVerdict,
-      passed_cases: passedCases,
-      total_cases: totalCases,
-      execution_time: Math.max(...results.map(r => r.time || 0)),
-      memory_used: Math.max(...results.map(r => r.memory || 0))
+      status: 'Pending',
+      passed_cases: 0,
+      total_cases: allCases.length,
+      execution_time: 0,
+      memory_used: 0
     });
     await submission.save();
 
-    // If Accepted, update user stats
-    let user = await User.findById(userId);
-    if (isAccepted && user) {
-      if (!user.solvedProblems) user.solvedProblems = [];
-      if (!user.solvedProblems.includes(problemId.toString())) {
-        user.solvedProblems.push(problemId.toString());
-        
-        const today = new Date().toISOString().split('T')[0];
-        const lastActive = user.lastActiveDate ? new Date(user.lastActiveDate).toISOString().split('T')[0] : null;
-        if (lastActive !== today) {
-          user.dailyStreak = (user.dailyStreak || 0) + 1;
-          user.lastActiveDate = new Date();
-        }
-        await user.save();
-        await syncUserStats(userId);
-      }
-    }
+    // 2. Add job to Queue or execute inline asynchronously if Redis is offline
+    const jobData = {
+      submissionId: submission._id,
+      userId,
+      questionId: problemId,
+      code,
+      language,
+      cases: allCases
+    };
 
-    const UserStats = require('../models/UserStats');
-    const stats = await UserStats.findOne({ userId }) || {};
-    
-    // Calculate total submissions and acceptance rate
-    const allUserSubs = await Submission.find({ user_id: userId });
-    const totalSubmissions = allUserSubs.length;
-    const acceptedSubs = allUserSubs.filter(s => s.status === 'Accepted').length;
-    const acceptanceRate = totalSubmissions > 0 ? Math.round((acceptedSubs / totalSubmissions) * 100) : 0;
-
-    // Calculate difficulty breakdown
-    let easySolved = 0, mediumSolved = 0, hardSolved = 0;
-    if (stats.solvedProblems && stats.solvedProblems.length > 0) {
-      const solvedQs = await Question.find({ _id: { $in: stats.solvedProblems } });
-      solvedQs.forEach(q => {
-        if (q.difficulty === 'Easy') easySolved++;
-        else if (q.difficulty === 'Medium') mediumSolved++;
-        else if (q.difficulty === 'Hard') hardSolved++;
-      });
+    if (redisClient.status === 'ready') {
+      await submissionQueue.add('submission', jobData);
+    } else {
+      const io = req.app.get('io');
+      // Fire and forget (runs asynchronously)
+      processSubmission(jobData, io).catch(e => console.error("Fallback process error:", e));
     }
 
     res.json({
-      status: finalVerdict,
-      passedCases,
-      totalCases,
-      results: [], // Hide detailed hidden case results
-      stats: {
-        totalSolved: stats.solvedProblems?.length || 0,
-        easySolved,
-        mediumSolved,
-        hardSolved,
-        currentStreak: stats.currentStreak || 0,
-        longestStreak: stats.longestStreak || 0,
-        totalSubmissions,
-        acceptanceRate
-      }
+      status: 'Pending',
+      submissionId: submission._id,
+      message: redisClient.status === 'ready' ? 'Submission enqueued successfully' : 'Submission processing started (fallback mode)'
     });
 
   } catch (error) {

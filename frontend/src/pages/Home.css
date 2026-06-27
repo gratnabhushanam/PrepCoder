@@ -1,0 +1,203 @@
+.home-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6rem;
+  padding-bottom: 4rem;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hero Section */
+.hero-section {
+  padding: 4rem 0 0;
+  text-align: center;
+  position: relative;
+}
+
+.hero-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-badge {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-primary);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.hero-title {
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  letter-spacing: -1px;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  max-width: 700px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+@media (max-width: 768px) {
+  .hero-title { font-size: 3rem; }
+  .hero-cta { flex-direction: column; width: 100%; max-width: 300px; }
+}
+
+/* Mock IDE */
+.hero-ide-mock {
+  width: 100%;
+  max-width: 800px;
+  background: #0d1117;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-align: left;
+  transform: perspective(1000px) rotateX(2deg);
+  transition: transform 0.5s ease;
+}
+.hero-ide-mock:hover {
+  transform: perspective(1000px) rotateX(0deg);
+}
+
+.ide-header {
+  background: #161b22;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+
+.ide-dots {
+  display: flex;
+  gap: 6px;
+}
+.ide-dots span {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.ide-dots .red { background: #ff5f56; }
+.ide-dots .yellow { background: #ffbd2e; }
+.ide-dots .green { background: #27c93f; }
+
+.ide-title {
+  flex: 1;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+}
+
+.ide-code {
+  padding: 1.5rem;
+  color: #c9d1d9;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+/* Features Section */
+.section-title {
+  text-align: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 3rem;
+  letter-spacing: -0.5px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 2rem;
+}
+
+.feature-icon {
+  padding: 1rem;
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+}
+.feature-icon.primary { background: rgba(59, 130, 246, 0.1); color: var(--color-primary); }
+.feature-icon.accent { background: rgba(139, 92, 246, 0.1); color: var(--color-accent); }
+.feature-icon.success { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+.feature-icon.warning { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+
+.feature-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.feature-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Trending Section */
+.trending-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.trending-header .section-title {
+  margin-bottom: 0;
+}
+
+.trending-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.trending-table th, .trending-table td {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.trending-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.02);
+}
+
+.trending-table tr:last-child td {
+  border-bottom: none;
+}
+
+.trending-table tr:hover {
+  background: rgba(255,255,255,0.02);
+}

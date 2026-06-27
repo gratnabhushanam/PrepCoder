@@ -29,7 +29,8 @@ const services = {
 // Route proxies
 app.use('/api/auth', createProxyMiddleware({ target: services.auth, changeOrigin: true }));
 
-app.use('/api/compiler', createProxyMiddleware({ target: services.compiler, changeOrigin: true }));
+const compilerProxy = createProxyMiddleware({ target: services.compiler, changeOrigin: true, ws: true });
+app.use('/api/compiler', compilerProxy);
 app.use('/api/coding', createProxyMiddleware({ target: services.compiler, changeOrigin: true }));
 
 app.use('/api/practice', createProxyMiddleware({ target: services.mcq, changeOrigin: true }));
@@ -53,6 +54,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'running' });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 API Gateway running on port http://localhost:${PORT}`);
+});
+
+// Handle WebSocket upgrades
+server.on('upgrade', (req, socket, head) => {
+  if (req.url.startsWith('/socket.io') || req.url.startsWith('/api/compiler')) {
+    compilerProxy.upgrade(req, socket, head);
+  }
 });

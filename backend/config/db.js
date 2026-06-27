@@ -235,7 +235,22 @@ const McqAttemptSchema = new mongoose.Schema({
 McqAttemptSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
 const McqAttempt = mongoose.models.McqAttempt || mongoose.model('McqAttempt', McqAttemptSchema);
 
-// 8. UserStats
+// 8. Contest Schema
+const ContestSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  startTime: { type: Date, required: true },
+  endTime: { type: Date, required: true },
+  duration: { type: Number, required: true }, // in minutes
+  questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
+  status: { type: String, enum: ['Upcoming', 'Active', 'Completed'], default: 'Upcoming' },
+  isDeleted: { type: Boolean, default: false }
+}, { timestamps: true });
+
+ContestSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
+const Contest = mongoose.models.Contest || mongoose.model('Contest', ContestSchema);
+
+// 9. UserStats
 const UserStats = require('../models/UserStats');
 
 // 9. PlatformSettings
@@ -283,5 +298,6 @@ module.exports = {
   Company,
   McqAttempt,
   UserStats,
-  PlatformSettings
+  PlatformSettings,
+  Contest
 };

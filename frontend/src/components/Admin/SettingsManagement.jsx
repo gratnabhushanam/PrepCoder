@@ -13,6 +13,15 @@ export default function SettingsManagement() {
     emailNotifications: true,
   });
 
+  const [compilerConfig, setCompilerConfig] = useState({
+    gcc: '',
+    gpp: '',
+    java: '',
+    javac: '',
+    python: '',
+    node: ''
+  });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -21,10 +30,15 @@ export default function SettingsManagement() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/admin/settings`, {
+        const resSettings = await axios.get(`${API_BASE}/admin/settings`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (res.data) setSettings(res.data);
+        if (resSettings.data) setSettings(resSettings.data);
+        
+        const resCompiler = await axios.get(`${API_BASE}/admin/compiler-config`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (resCompiler.data) setCompilerConfig(resCompiler.data);
       } catch (e) {
         console.error('Failed to load settings', e);
       } finally {
@@ -40,7 +54,10 @@ export default function SettingsManagement() {
       await axios.put(`${API_BASE}/admin/settings`, settings, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessage('✅ Settings saved successfully to Database!');
+      await axios.put(`${API_BASE}/admin/compiler-config`, compilerConfig, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage('✅ Settings and Compiler Config saved successfully!');
     } catch (e) {
       setMessage('❌ Failed to save settings.');
     } finally {
@@ -136,6 +153,32 @@ export default function SettingsManagement() {
                 }}></span>
               </span>
             </label>
+          </div>
+        </div>
+
+        {/* Compiler Configuration */}
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--color-primary)' }}>
+            <Server size={20} /> Compiler Configuration Paths
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            Specify the absolute paths to the compilers if they are not correctly auto-detected in the system PATH.
+          </p>
+
+          <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+            {['gcc', 'gpp', 'java', 'javac', 'python', 'node'].map(compiler => (
+              <div className="form-group" key={compiler}>
+                <label className="form-label" style={{ textTransform: 'uppercase' }}>{compiler === 'gpp' ? 'g++' : compiler}</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={compilerConfig[compiler] || ''} 
+                  onChange={e => setCompilerConfig({...compilerConfig, [compiler]: e.target.value})} 
+                  placeholder={`Auto-detect (${compiler})`}
+                  style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>

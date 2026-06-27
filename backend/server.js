@@ -8,7 +8,19 @@ const morgan = require('morgan');
 const db = require('./config/db');
 const { seedDatabase } = require('./config/seedData');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+app.set('io', io);
+
 const PORT = process.env.PORT || 5000;
 
 // Security & Performance Middleware
@@ -46,12 +58,14 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/practice', require('./routes/practice'));
 app.use('/api/coding', require('./routes/coding'));
-app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/coding', require('./routes/adminCoding'));
 app.use('/api/compiler', require('./routes/compiler'));
 // require('./config/redis');
-// require('./queues/submissionQueue');
+const { submissionWorker } = require('./queues/submissionQueue');
+if (typeof submissionWorker === 'function') {
+  submissionWorker(io);
+}
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 
@@ -72,7 +86,13 @@ app.use((err, req, res, next) => {
   });
 });
 
+io.on('connection', (socket) => {
+  socket.on('join_submission', (submissionId) => {
+    socket.join(`submission_${submissionId}`);
+  });
+});
+
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Express server running on port http://localhost:${PORT}`);
 });

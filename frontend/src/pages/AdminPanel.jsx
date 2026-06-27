@@ -4,9 +4,14 @@ import { AppContext } from '../context/AppContext';
 import QuestionManagement from '../components/Admin/QuestionManagement';
 import AdminSidebar from '../components/Admin/AdminSidebar';
 import UsersManagement from '../components/Admin/UsersManagement';
-import SubmissionsManagement from '../components/Admin/SubmissionsManagement';
 import RealTimeAnalytics from '../components/Admin/RealTimeAnalytics';
 import SettingsManagement from '../components/Admin/SettingsManagement';
+
+// New Components
+import AdminOverview from '../components/Admin/AdminOverview';
+import AdminSystemHealth from '../components/Admin/AdminSystemHealth';
+import AdminSubmissions from '../components/Admin/AdminSubmissions';
+import AdminContests from '../components/Admin/AdminContests';
 
 export default function AdminPanel() {
   const { API_BASE, user, token } = useContext(AppContext);
@@ -507,11 +512,18 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {activeTab === 'settings' && <SettingsManagement />}
+      {/* New Component Mappings */}
+      {activeTab === 'dashboard' && <AdminOverview analytics={analytics} />}
+      {(activeTab === 'system_health' || activeTab === 'compiler_status' || activeTab === 'logs' || activeTab === 'compiler_config') && <AdminSystemHealth />}
+      {activeTab === 'submissions' && <AdminSubmissions />}
       
+      {/* Existing Component Mappings */}
+      {activeTab === 'settings' && <SettingsManagement />}
       {activeTab === 'users' && <UsersManagement />}
-      {activeTab === 'submissions' && <SubmissionsManagement />}
       {activeTab === 'analytics' && <RealTimeAnalytics />}
+      {activeTab === 'reports' && <div style={{padding:'2rem'}}><h2>Reports coming soon</h2></div>}
+      {activeTab === 'announcements' && <div style={{padding:'2rem'}}><h2>Announcements coming soon</h2></div>}
+      {activeTab === 'contests' && <AdminContests />}
 
       </div>
     </div>

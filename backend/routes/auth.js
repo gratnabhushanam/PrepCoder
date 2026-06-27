@@ -92,6 +92,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       readinessScore: user.readinessScore,
       dailyStreak: user.dailyStreak,
       solvedProblems: user.solvedProblems || [],
+      userProgress: user.userProgress || { total_solved: 0, easy_solved: 0, medium_solved: 0, hard_solved: 0, current_streak: 0 },
       resumeData: user.resumeData || null
     });
   } catch (error) {
@@ -114,6 +115,7 @@ router.get('/profile', protect, async (req, res) => {
         readinessScore: user.readinessScore,
         dailyStreak: user.dailyStreak,
         solvedProblems: user.solvedProblems || [],
+        userProgress: user.userProgress || { total_solved: 0, easy_solved: 0, medium_solved: 0, hard_solved: 0, current_streak: 0 },
         mcqStats: user.mcqStats || { totalAttempted: 0, correctAnswers: 0, topicsCompleted: [] },
         aiInterviewStats: user.aiInterviewStats || [],
         resumeData: user.resumeData || null
