@@ -1,28 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Code, Terminal, Trophy, Users, Zap, Layout, MonitorPlay, CheckCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import './Home.css';
 
 export default function Home() {
   const [trendingProblems, setTrendingProblems] = useState([]);
+  const [features, setFeatures] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
 
   useEffect(() => {
     const fetchTrending = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const res = await axios.get(`${API_BASE}/coding/public/trending`);
-        if (Array.isArray(res.data)) {
-          setTrendingProblems(res.data);
-        } else {
-          console.error('Invalid response format', res.data);
-        }
+        const [trendRes, featRes, testRes] = await Promise.all([
+          axios.get(`${API_BASE}/coding/public/trending`).catch(() => ({ data: [] })),
+          axios.get(`${API_BASE}/coding/public/cms/features`).catch(() => ({ data: [] })),
+          axios.get(`${API_BASE}/coding/public/cms/testimonials`).catch(() => ({ data: [] }))
+        ]);
+
+        if (Array.isArray(trendRes.data)) setTrendingProblems(trendRes.data);
+        if (Array.isArray(featRes.data)) setFeatures(featRes.data);
+        if (Array.isArray(testRes.data)) setTestimonials(testRes.data);
       } catch (err) {
-        console.error('Failed to fetch trending problems', err);
+        console.error('Failed to fetch home page data', err);
       }
     };
     fetchTrending();
   }, []);
+
+  // Fallback data if backend is empty or errors
+  const displayFeatures = features.length > 0 ? features : [
+    { _id: '1', icon: 'Terminal', title: 'Online Compiler', description: 'Execute code in 15+ languages instantly. No setup required, just pure coding directly in your browser.' },
+    { _id: '2', icon: 'Code', title: 'Curated Challenges', description: 'From easy arrays to complex dynamic programming, solve the exact problems asked by FAANG companies.' },
+    { _id: '3', icon: 'Trophy', title: 'Weekly Contests', description: 'Compete globally with thousands of developers. Boost your rating and earn exclusive badges.' },
+    { _id: '4', icon: 'Zap', title: 'AI-Assisted Learning', description: 'Get instant hints, editorial solutions, and code reviews powered by intelligent AI models.' }
+  ];
+
+  const displayTestimonials = testimonials.length > 0 ? testimonials : [
+    { _id: '1', name: 'Sarah J.', role: 'Software Engineer @ Google', text: 'CodeDebut was instrumental in my interview preparation. The curated problem lists and instant AI feedback are unmatched.', avatar: 'S' },
+    { _id: '2', name: 'David M.', role: 'Computer Science Student', text: 'The online compiler is lightning fast, and I love the weekly contests. It keeps me motivated to practice every single day.', avatar: 'D' },
+    { _id: '3', name: 'Priya K.', role: 'Frontend Developer', text: 'I transitioned from frontend to full-stack using their data structures tracks. The explanations are crystal clear.', avatar: 'P' }
+  ];
 
   // Fallback data if backend is empty or errors
   const displayProblems = trendingProblems.length > 0 ? trendingProblems : [
@@ -68,26 +88,17 @@ export default function Home() {
       <section id="features" className="features-section">
         <h2 className="section-title">Everything you need to land your dream job</h2>
         <div className="features-grid">
-          <div className="feature-card card">
-            <div className="feature-icon primary"><Terminal size={24}/></div>
-            <h3>Online Compiler</h3>
-            <p>Execute code in 15+ languages instantly. No setup required, just pure coding directly in your browser.</p>
-          </div>
-          <div className="feature-card card">
-            <div className="feature-icon accent"><Code size={24}/></div>
-            <h3>Curated Challenges</h3>
-            <p>From easy arrays to complex dynamic programming, solve the exact problems asked by FAANG companies.</p>
-          </div>
-          <div className="feature-card card">
-            <div className="feature-icon success"><Trophy size={24}/></div>
-            <h3>Weekly Contests</h3>
-            <p>Compete globally with thousands of developers. Boost your rating and earn exclusive badges.</p>
-          </div>
-          <div className="feature-card card">
-            <div className="feature-icon warning"><Zap size={24}/></div>
-            <h3>AI-Assisted Learning</h3>
-            <p>Get instant hints, editorial solutions, and code reviews powered by intelligent AI models.</p>
-          </div>
+          {displayFeatures.map((feat, idx) => {
+            const IconComponent = Icons[feat.icon] || Icons.Code;
+            const colorClass = idx % 4 === 0 ? 'primary' : idx % 4 === 1 ? 'accent' : idx % 4 === 2 ? 'success' : 'warning';
+            return (
+              <div key={feat._id} className="feature-card card">
+                <div className={`feature-icon ${colorClass}`}><IconComponent size={24}/></div>
+                <h3>{feat.title}</h3>
+                <p>{feat.description}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -127,16 +138,12 @@ export default function Home() {
       <section id="testimonials" className="testimonials-section" style={{ padding: '4rem 0' }}>
         <h2 className="section-title">What Our Users Say</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', padding: '0 2rem' }}>
-          {[
-            { name: 'Sarah J.', role: 'Software Engineer @ Google', text: 'CodeDebut was instrumental in my interview preparation. The curated problem lists and instant AI feedback are unmatched.', avatar: 'S' },
-            { name: 'David M.', role: 'Computer Science Student', text: 'The online compiler is lightning fast, and I love the weekly contests. It keeps me motivated to practice every single day.', avatar: 'D' },
-            { name: 'Priya K.', role: 'Frontend Developer', text: 'I transitioned from frontend to full-stack using their data structures tracks. The explanations are crystal clear.', avatar: 'P' }
-          ].map((testimony, idx) => (
-            <div key={idx} className="card glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: `4px solid var(--color-${idx===0 ? 'primary' : idx===1 ? 'accent' : 'success'})` }}>
+          {displayTestimonials.map((testimony, idx) => (
+            <div key={testimony._id} className="card glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: `4px solid var(--color-${idx % 3 === 0 ? 'primary' : idx % 3 === 1 ? 'accent' : 'success'})` }}>
               <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>"{testimony.text}"</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: 'auto', paddingTop: '1rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                  {testimony.avatar}
+                  {testimony.avatar || testimony.name.charAt(0)}
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{testimony.name}</div>

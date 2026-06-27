@@ -31,6 +31,13 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
       ]
     },
     {
+      title: 'Landing Page CMS',
+      items: [
+        { id: 'manage_features', label: 'Manage Features', icon: <Layers size={18} /> },
+        { id: 'manage_testimonials', label: 'Manage Testimonials', icon: <Users size={18} /> },
+      ]
+    },
+    {
       title: 'System',
       items: [
         { id: 'compiler_status', label: 'Online Compiler', icon: <Terminal size={18} /> },

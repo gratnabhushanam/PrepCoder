@@ -12,6 +12,8 @@ import AdminOverview from '../components/Admin/AdminOverview';
 import AdminSystemHealth from '../components/Admin/AdminSystemHealth';
 import AdminSubmissions from '../components/Admin/AdminSubmissions';
 import AdminContests from '../components/Admin/AdminContests';
+import FeatureManagement from '../components/Admin/FeatureManagement';
+import TestimonialManagement from '../components/Admin/TestimonialManagement';
 
 export default function AdminPanel() {
   const { API_BASE, user, token } = useContext(AppContext);
@@ -516,6 +518,10 @@ export default function AdminPanel() {
       {activeTab === 'dashboard' && <AdminOverview analytics={analytics} />}
       {(activeTab === 'system_health' || activeTab === 'compiler_status' || activeTab === 'logs' || activeTab === 'compiler_config') && <AdminSystemHealth />}
       {activeTab === 'submissions' && <AdminSubmissions />}
+      
+      {/* CMS Components */}
+      {activeTab === 'manage_features' && <FeatureManagement />}
+      {activeTab === 'manage_testimonials' && <TestimonialManagement />}
       
       {/* Existing Component Mappings */}
       {activeTab === 'settings' && <SettingsManagement />}

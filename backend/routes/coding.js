@@ -31,6 +31,32 @@ router.get('/public/trending', async (req, res) => {
   }
 });
 
+// @route   GET /api/coding/public/cms/features
+// @desc    Get all active features for the home page (Public)
+router.get('/public/cms/features', async (req, res) => {
+  try {
+    const { Feature } = require('../config/db');
+    const features = await Feature.find({ isActive: true }).sort({ order: 1 });
+    res.json(features);
+  } catch (error) {
+    console.error('Error fetching CMS features:', error);
+    res.status(500).json({ message: 'Server Error fetching features' });
+  }
+});
+
+// @route   GET /api/coding/public/cms/testimonials
+// @desc    Get all active testimonials for the home page (Public)
+router.get('/public/cms/testimonials', async (req, res) => {
+  try {
+    const { Testimonial } = require('../config/db');
+    const testimonials = await Testimonial.find({ isActive: true }).sort({ order: 1 });
+    res.json(testimonials);
+  } catch (error) {
+    console.error('Error fetching CMS testimonials:', error);
+    res.status(500).json({ message: 'Server Error fetching testimonials' });
+  }
+});
+
 // @route   GET /api/coding/concepts
 // @desc    Get all concepts and user progress
 router.get('/concepts', protect, async (req, res) => {

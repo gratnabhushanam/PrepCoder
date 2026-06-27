@@ -264,6 +264,29 @@ const PlatformSettingsSchema = new mongoose.Schema({
 PlatformSettingsSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
 const PlatformSettings = mongoose.models.PlatformSettings || mongoose.model('PlatformSettings', PlatformSettingsSchema);
 
+// 10. CMS Feature Schema
+const FeatureSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  icon: { type: String, default: 'Code' },
+  isActive: { type: Boolean, default: true },
+  order: { type: Number, default: 0 }
+}, { timestamps: true });
+FeatureSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
+const Feature = mongoose.models.Feature || mongoose.model('Feature', FeatureSchema);
+
+// 11. CMS Testimonial Schema
+const TestimonialSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  role: { type: String, required: true },
+  text: { type: String, required: true },
+  avatar: { type: String },
+  isActive: { type: Boolean, default: true },
+  order: { type: Number, default: 0 }
+}, { timestamps: true });
+TestimonialSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } });
+const Testimonial = mongoose.models.Testimonial || mongoose.model('Testimonial', TestimonialSchema);
+
 
 // Admin Seeder
 async function seedAdmin() {
@@ -299,5 +322,7 @@ module.exports = {
   McqAttempt,
   UserStats,
   PlatformSettings,
-  Contest
+  Contest,
+  Feature,
+  Testimonial
 };

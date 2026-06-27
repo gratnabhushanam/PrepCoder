@@ -59,6 +59,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/practice', require('./routes/practice'));
 app.use('/api/coding', require('./routes/coding'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin/cms', require('./routes/adminCms'));
 app.use('/api/admin/coding', require('./routes/adminCoding'));
 app.use('/api/compiler', require('./routes/compiler'));
 // require('./config/redis');
