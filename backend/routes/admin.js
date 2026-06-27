@@ -171,6 +171,9 @@ router.post('/mcqs', protect, async (req, res) => {
 // @desc    Update MCQ by ID
 router.put('/mcqs/:id', protect, async (req, res) => {
   try {
+    req.body.updatedAt = Date.now();
+    delete req.body._id;
+    delete req.body.id;
     const updatedMcq = await Mcq.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedMcq) return res.status(404).json({ message: 'MCQ not found' });
     res.json(updatedMcq);
@@ -475,6 +478,8 @@ router.get('/coding/questions/:id', protect, async (req, res) => {
 router.put('/coding/questions/:id', protect, async (req, res) => {
   try {
     req.body.updatedAt = Date.now();
+    delete req.body._id;
+    delete req.body.id;
     const updated = await Question.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) return res.status(404).json({ message: 'Question not found' });
     res.json(updated);

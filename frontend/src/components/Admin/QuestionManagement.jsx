@@ -38,7 +38,7 @@ export default function QuestionManagement() {
       // Fetch MCQs (MongoDB)
       const mcqRes = await axios.get(`${API_BASE}/admin/mcqs`, { headers: { Authorization: `Bearer ${token}` } });
       const mcqs = mcqRes.data.map(m => ({
-        id: m._id,
+        id: m.id || m._id,
         type: 'MCQ',
         title: m.question,
         category: m.category,
@@ -52,7 +52,7 @@ export default function QuestionManagement() {
       // Fetch Coding Problems (MySQL)
       const codingRes = await axios.get(`${API_BASE}/admin/coding/questions`, { headers: { Authorization: `Bearer ${token}` } });
       const codings = codingRes.data.map(c => ({
-        id: c.id,
+        id: c.id || c._id,
         type: 'Coding',
         title: c.title,
         category: c.concept_name || 'Uncategorized',
