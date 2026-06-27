@@ -58,8 +58,8 @@ export default function QuestionManagement() {
         category: c.concept_name || 'Uncategorized',
         difficulty: c.difficulty,
         status: c.status || 'Active',
-        createdAt: c.created_at,
-        updatedAt: c.updated_at || c.created_at,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt || c.createdAt,
         raw: c
       }));
 

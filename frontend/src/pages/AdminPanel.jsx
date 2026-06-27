@@ -245,23 +245,23 @@ export default function AdminPanel() {
         <div>
           <div className="grid-4" style={{ marginBottom: '2.5rem' }}>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics.summary.totalQuestions}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics?.summary?.totalQuestions || 0}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Total Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{analytics.summary.easyProblems}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-success)' }}>{analytics?.summary?.easyProblems || 0}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Easy Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-warning)' }}>{analytics.summary.mediumProblems}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-warning)' }}>{analytics?.summary?.mediumProblems || 0}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Medium Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-danger)' }}>{analytics.summary.hardProblems}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-danger)' }}>{analytics?.summary?.hardProblems || 0}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Hard Questions</div>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)' }}>{analytics.summary.activeProblems}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)' }}>{analytics?.summary?.activeProblems || 0}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.2rem' }}>Active Questions</div>
             </div>
           </div>
