@@ -127,7 +127,7 @@ router.get('/questions', protect, async (req, res) => {
 router.get('/problem/:id', protect, async (req, res) => {
   try {
     const question = await Question.findById(req.params.id).lean();
-    if (!question) return res.status(404).json({ message: 'Problem not found' });
+    if (!question || question.isDeleted) return res.status(404).json({ message: 'Problem not found' });
 
     const userId = req.user._id || req.user.id;
     

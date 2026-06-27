@@ -437,5 +437,79 @@ router.post('/coding/questions', protect, async (req, res) => {
     res.status(500).json({ message: 'Failed to create coding problem' });
   }
 });
+// @route   GET /api/admin/coding/questions
+// @desc    Get all coding questions
+router.get('/coding/questions', protect, async (req, res) => {
+  try {
+    const questions = await Question.find({ isDeleted: { $ne: true } }).lean();
+    const populated = await Question.populate(questions, { path: 'concept_id', select: 'name' });
+    const formatted = populated.map(q => ({
+      ...q,
+      id: q._id,
+      concept_name: q.concept_id ? q.concept_id.name : 'Uncategorized',
+      created_at: q.createdAt,
+      updated_at: q.updatedAt
+    }));
+    res.json(formatted);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch coding questions' });
+  }
+});
+
+// @route   GET /api/admin/coding/questions/:id
+// @desc    Get single coding question
+router.get('/coding/questions/:id', protect, async (req, res) => {
+  try {
+    const q = await Question.findById(req.params.id);
+    if (!q) return res.status(404).json({ message: 'Question not found' });
+    res.json(q);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch question' });
+  }
+});
+
+// @route   PUT /api/admin/coding/questions/:id
+// @desc    Update coding question
+router.put('/coding/questions/:id', protect, async (req, res) => {
+  try {
+    req.body.updatedAt = Date.now();
+    const updated = await Question.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Question not found' });
+    res.json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update question' });
+  }
+});
+
+// @route   DELETE /api/admin/coding/questions/:id
+// @desc    Delete coding question (soft delete)
+router.delete('/coding/questions/:id', protect, async (req, res) => {
+  try {
+    await Question.findByIdAndUpdate(req.params.id, { isDeleted: true });
+    
+    // Also remove from user's solvedProblems to update the user perspective
+    const { User, Submission } = require('../config/db');
+    const subs = await Submission.find({ question_id: req.params.id, status: 'Accepted' });
+    const userIds = [...new Set(subs.map(s => s.user_id.toString()))];
+    
+    if (userIds.length > 0) {
+      await User.updateMany(
+        { _id: { $in: userIds } },
+        { 
+          $pull: { solvedProblems: req.params.id }
+        }
+      );
+    }
+    
+    res.json({ message: 'Question deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to delete question' });
+  }
+});
 
 module.exports = router;
+

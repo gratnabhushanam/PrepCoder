@@ -76,7 +76,10 @@ export default function QuestionManagement() {
   const handleSearch = (e) => setSearchTerm(e.target.value);
 
   const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.title.toLowerCase().includes(searchTerm.toLowerCase()) || q.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const title = q.title || '';
+    const category = q.category || 'Uncategorized';
+    
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) || category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDiff = filterDifficulty === 'All' || q.difficulty === filterDifficulty;
     const matchesType = filterType === 'All' || q.type === filterType;
     const matchesStatus = filterStatus === 'All' || q.status === filterStatus;
@@ -259,7 +262,7 @@ export default function QuestionManagement() {
                   <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: q.status === 'Active' ? '#dcfce7' : '#fee2e2', color: q.status === 'Active' ? '#166534' : '#991b1b' }}>{q.status}</span>
                 </td>
                 <td style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {q.updatedAt ? format(new Date(q.updatedAt), 'MMM dd, yyyy HH:mm') : '-'}
+                  {q.updatedAt && !isNaN(new Date(q.updatedAt).getTime()) ? format(new Date(q.updatedAt), 'MMM dd, yyyy HH:mm') : '-'}
                 </td>
                 <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                   <button onClick={() => setViewingQuestion(q)} className="action-btn" title="View"><Eye size={16} /></button>
