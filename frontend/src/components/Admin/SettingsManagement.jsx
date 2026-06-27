@@ -6,7 +6,7 @@ import { AppContext } from '../../context/AppContext';
 export default function SettingsManagement() {
   const { API_BASE, token } = useContext(AppContext);
   const [settings, setSettings] = useState({
-    platformName: 'PrepAI',
+    platformName: 'CodeDebut',
     maintenanceMode: false,
     allowSignups: true,
     defaultTheme: 'dark',

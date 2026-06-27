@@ -173,7 +173,7 @@ export default function OnlineCompiler() {
       <div className="compiler-navbar">
         <div className="compiler-nav-left">
           <Link to="/" className="compiler-logo">
-            <span>✨</span> PrepAI Compiler
+            <span>✨</span> CodeDebut Compiler
           </Link>
         </div>
         

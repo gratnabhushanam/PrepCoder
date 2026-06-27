@@ -255,7 +255,7 @@ const UserStats = require('../models/UserStats');
 
 // 9. PlatformSettings
 const PlatformSettingsSchema = new mongoose.Schema({
-  platformName: { type: String, default: 'PrepAI' },
+  platformName: { type: String, default: 'CodeDebut' },
   maintenanceMode: { type: Boolean, default: false },
   allowSignups: { type: Boolean, default: true },
   defaultTheme: { type: String, default: 'dark' },
@@ -268,7 +268,7 @@ const PlatformSettings = mongoose.models.PlatformSettings || mongoose.model('Pla
 // Admin Seeder
 async function seedAdmin() {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@prepai.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@codedebut.dev';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
     
     const existingAdmin = await User.findOne({ email: adminEmail });

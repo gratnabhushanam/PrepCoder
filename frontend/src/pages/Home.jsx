@@ -10,7 +10,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
-          <div className="hero-badge">✨ PrepAI v2.0 is now live</div>
+          <div className="hero-badge">✨ CodeDebut v2.0 is now live</div>
           <h1 className="hero-title">
             The Ultimate <span className="text-gradient">AI-Powered</span> <br /> Coding Platform
           </h1>
@@ -29,7 +29,7 @@ export default function Home() {
               <div className="ide-title">main.cpp</div>
             </div>
             <pre className="ide-code">
-              <code>{`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, PrepAI!" << endl;\n    // Start your coding journey here\n    return 0;\n}`}</code>
+              <code>{`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, CodeDebut!" << endl;\n    // Start your coding journey here\n    return 0;\n}`}</code>
             </pre>
           </div>
         </div>

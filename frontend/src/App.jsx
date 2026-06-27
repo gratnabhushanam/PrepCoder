@@ -66,7 +66,7 @@ export default function App() {
                 <div style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', borderRadius: '8px', padding: '0.4rem', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Monitor size={18} />
                 </div>
-                PrepAI
+                CodeDebut
               </Link>
             </div>
 
@@ -205,7 +205,7 @@ export default function App() {
         </main>
 
         <footer className="footer no-print">
-          <p>© {new Date().getFullYear()} PrepAI Coding Platform. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} CodeDebut Coding Platform. All rights reserved.</p>
         </footer>
       </div>
       
