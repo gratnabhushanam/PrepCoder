@@ -54,6 +54,7 @@ router.get('/stats', protect, async (req, res) => {
       streak: stats.currentStreak,
       rank,
       totalUsers,
+      totalPoints: stats.totalPoints,
       recentActivity: recentActivity.slice(0, 5)
     });
 

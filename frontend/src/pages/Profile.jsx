@@ -5,14 +5,29 @@ import { MapPin, Briefcase, Calendar, Link as LinkIcon, Award, Code, CheckCircle
 import './Profile.css';
 
 export default function Profile() {
-  const { user } = useContext(AppContext);
+  const { user, API_BASE, token } = useContext(AppContext);
   const [loading, setLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState(null);
 
-  // Simulate loading state for skeleton effect
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/dashboard/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDashboardStats(res.data);
+      } catch (err) {
+        console.error('Failed to fetch stats', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (token && user) {
+      fetchStats();
+    } else {
+      setLoading(false);
+    }
+  }, [API_BASE, token, user]);
 
   if (!user) {
     return <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>Please log in to view your profile.</div>;
@@ -24,14 +39,17 @@ export default function Profile() {
   const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Jan 2026';
   
   const progress = user.userProgress || { total_solved: 0, easy_solved: 0, medium_solved: 0, hard_solved: 0 };
+  const totalPoints = dashboardStats?.totalPoints || (progress.easy_solved * 10 + progress.medium_solved * 20 + progress.hard_solved * 30);
+  const algorithmsSolved = dashboardStats?.algorithmsSolved || progress.total_solved || 0;
+
   const stats = {
-    rating: progress.total_solved > 0 ? 1500 + progress.total_solved * 5 : 'Unranked',
-    globalRank: progress.total_solved > 0 ? Math.max(1, 20000 - progress.total_solved * 100) : 'Unranked',
-    streak: user.dailyStreak || 0,
-    points: progress.easy_solved * 10 + progress.medium_solved * 20 + progress.hard_solved * 30,
-    acceptance: progress.total_solved > 0 ? '100%' : 'N/A',
+    rating: algorithmsSolved > 0 ? 1500 + algorithmsSolved * 5 : 'Unranked',
+    globalRank: dashboardStats?.rank ? `#${dashboardStats.rank}` : 'Unranked',
+    streak: dashboardStats?.streak || user.dailyStreak || 0,
+    points: totalPoints,
+    acceptance: algorithmsSolved > 0 ? '100%' : 'N/A',
     solved: {
-      total: progress.total_solved,
+      total: algorithmsSolved,
       easy: progress.easy_solved,
       medium: progress.medium_solved,
       hard: progress.hard_solved
