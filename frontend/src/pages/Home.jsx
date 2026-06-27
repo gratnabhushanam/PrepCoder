@@ -1,9 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Code, Terminal, Trophy, Users, Zap, Layout, MonitorPlay, CheckCircle } from 'lucide-react';
 import './Home.css';
 
 export default function Home() {
+  const [trendingProblems, setTrendingProblems] = useState([]);
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const res = await axios.get('/api/coding/public/trending');
+        setTrendingProblems(res.data);
+      } catch (err) {
+        console.error('Failed to fetch trending problems', err);
+      }
+    };
+    fetchTrending();
+  }, []);
+
+  // Fallback data if backend is empty or errors
+  const displayProblems = trendingProblems.length > 0 ? trendingProblems : [
+    { title: '1. Two Sum', acc: '49.8%', diff: 'Easy' },
+    { title: '2. Add Two Numbers', acc: '40.2%', diff: 'Medium' },
+    { title: '3. Longest Substring Without Repeating Characters', acc: '33.8%', diff: 'Medium' },
+    { title: '4. Median of Two Sorted Arrays', acc: '36.5%', diff: 'Hard' },
+    { title: '5. Longest Palindromic Substring', acc: '32.6%', diff: 'Medium' }
+  ];
+
   return (
     <div className="home-container animation-fade-in">
       
@@ -79,16 +103,12 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {[
-                { title: '1. Two Sum', acc: '49.8%', diff: 'Easy' },
-                { title: '2. Add Two Numbers', acc: '40.2%', diff: 'Medium' },
-                { title: '3. Longest Substring Without Repeating Characters', acc: '33.8%', diff: 'Medium' },
-                { title: '4. Median of Two Sorted Arrays', acc: '36.5%', diff: 'Hard' },
-                { title: '5. Longest Palindromic Substring', acc: '32.6%', diff: 'Medium' }
-              ].map((prob, i) => (
+              {displayProblems.map((prob, i) => (
                 <tr key={i}>
                   <td><CheckCircle size={18} color="var(--text-muted)" /></td>
-                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}><Link to="/coding">{prob.title}</Link></td>
+                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <Link to={prob._id ? `/coding/problem/${prob._id}` : "/coding"}>{prob.title}</Link>
+                  </td>
                   <td style={{ color: 'var(--text-secondary)' }}>{prob.acc}</td>
                   <td><span className={`diff-badge diff-${prob.diff.toLowerCase()}`}>{prob.diff}</span></td>
                 </tr>

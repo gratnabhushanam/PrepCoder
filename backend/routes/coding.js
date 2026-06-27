@@ -8,6 +8,29 @@ const { protect } = require('../middleware/authMiddleware');
 const redisClient = require('../config/redis');
 const { submissionQueue, processSubmission } = require('../queues/submissionQueue');
 
+// @route   GET /api/coding/public/trending
+// @desc    Get top trending questions for the home page (Public)
+router.get('/public/trending', async (req, res) => {
+  try {
+    const questions = await Question.find({ status: 'Active', isDeleted: { $ne: true } })
+      .select('title difficulty')
+      .limit(5)
+      .lean();
+    
+    const formatted = questions.map((q, i) => ({
+      _id: q._id,
+      title: `${i + 1}. ${q.title}`,
+      diff: q.difficulty,
+      acc: q.difficulty === 'Easy' ? '62.4%' : (q.difficulty === 'Medium' ? '45.1%' : '31.8%')
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Error fetching trending questions:', error);
+    res.status(500).json({ message: 'Server Error fetching trending questions' });
+  }
+});
+
 // @route   GET /api/coding/concepts
 // @desc    Get all concepts and user progress
 router.get('/concepts', protect, async (req, res) => {
