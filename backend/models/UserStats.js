@@ -12,6 +12,7 @@ const UserStatsSchema = new mongoose.Schema({
   longestStreak: { type: Number, default: 0 },
   readinessScore: { type: Number, default: 0 },
   totalPoints: { type: Number, default: 0 },
+  contestRating: { type: Number, default: 1500 },
   lastActivityDate: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

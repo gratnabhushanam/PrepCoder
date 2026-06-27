@@ -55,6 +55,7 @@ router.get('/stats', protect, async (req, res) => {
       rank,
       totalUsers,
       totalPoints: stats.totalPoints,
+      contestRating: stats.contestRating || 1500,
       recentActivity: recentActivity.slice(0, 5)
     });
 

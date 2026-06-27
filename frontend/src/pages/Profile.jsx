@@ -43,7 +43,7 @@ export default function Profile() {
   const algorithmsSolved = dashboardStats?.algorithmsSolved || progress.total_solved || 0;
 
   const stats = {
-    rating: algorithmsSolved > 0 ? 1500 + algorithmsSolved * 5 : 'Unranked',
+    rating: dashboardStats ? (dashboardStats.contestRating || 1500) : 'Unranked',
     globalRank: dashboardStats?.rank ? `#${dashboardStats.rank}` : 'Unranked',
     streak: dashboardStats?.streak || user.dailyStreak || 0,
     points: totalPoints,
