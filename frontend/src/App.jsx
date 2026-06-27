@@ -20,6 +20,8 @@ import Submissions from './pages/Submissions';
 import Achievements from './pages/Achievements';
 import Bookmarks from './pages/Bookmarks';
 import MCQPlatform from './pages/MCQPlatform';
+import DifficultySelection from './pages/DifficultySelection';
+import QuestionsList from './pages/QuestionsList';
 
 export default function App() {
   const { token, user, theme, toggleTheme, logout } = useContext(AppContext);
@@ -184,7 +186,9 @@ export default function App() {
             <Route path="/register" element={!token ? <Register /> : <Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" />} />
             <Route path="/coding" element={token ? <ConceptsDashboard /> : <Navigate to="/login" />} />
-            <Route path="/coding/:id" element={token ? <CodingWorkspace /> : <Navigate to="/login" />} />
+            <Route path="/coding/concept/:conceptId" element={token ? <DifficultySelection /> : <Navigate to="/login" />} />
+            <Route path="/coding/concept/:conceptId/difficulty/:difficulty" element={token ? <QuestionsList /> : <Navigate to="/login" />} />
+            <Route path="/coding/problem/:id" element={token ? <CodingWorkspace /> : <Navigate to="/login" />} />
             <Route path="/mcq" element={token ? <MCQPlatform /> : <Navigate to="/login" />} />
             <Route path="/mcq/:topic" element={token ? <MCQPlatform /> : <Navigate to="/login" />} />
             <Route path="/compiler" element={token ? <OnlineCompiler /> : <Navigate to="/login" />} />
