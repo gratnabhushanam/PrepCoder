@@ -17,7 +17,7 @@ export default function AdminSidebar({ activeTab, setActiveTab }) {
       title: 'Management',
       items: [
         { id: 'users', label: 'Users', icon: <Users size={18} /> },
-        { id: 'problems', label: 'Coding Problems', icon: <Code size={18} /> },
+        { id: 'manage_questions', label: 'Manage Questions', icon: <FileText size={18} /> },
         { id: 'submissions', label: 'Submissions', icon: <Layers size={18} /> },
         { id: 'contests', label: 'Contests', icon: <Trophy size={18} /> },
       ]

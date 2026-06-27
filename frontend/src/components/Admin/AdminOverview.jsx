@@ -1,11 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
+import { AppContext } from '../../context/AppContext';
 import { Users, Code, Activity, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function AdminOverview({ analytics }) {
-  // Mock data for analytics (Charts)
-  const mockDailyUsers = [120, 150, 180, 220, 260, 310, 390];
-  const mockSubmissions = [400, 450, 600, 750, 800, 1100, 1400];
-  const maxValue = Math.max(...mockSubmissions);
+  const { API_BASE, token } = useContext(AppContext);
+  const [realtimeData, setRealtimeData] = useState({ registrationData: [], solveData: [] });
+
+  useEffect(() => {
+    const fetchRealtime = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/admin/analytics/realtime`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setRealtimeData(res.data);
+      } catch (err) {
+        console.error('Failed to fetch realtime data', err);
+      }
+    };
+    fetchRealtime();
+  }, [API_BASE, token]);
+
+  // Use real data if available, fallback to zeros for the chart shape
+  const last7Days = realtimeData.solveData.slice(-7).map(d => d.count);
+  const chartData = last7Days.length > 0 ? last7Days : [0, 0, 0, 0, 0, 0, 0];
+  const maxValue = Math.max(...chartData, 10);
 
   return (
     <div className="animation-fade-in" style={{ padding: '2rem' }}>
@@ -18,7 +37,7 @@ export default function AdminOverview({ analytics }) {
             <Users size={28} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.users || 1245}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.summary?.totalUsers || 1245}</div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '0.25rem' }}>TOTAL USERS</div>
           </div>
         </div>
@@ -28,7 +47,7 @@ export default function AdminOverview({ analytics }) {
             <Code size={28} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.problems || 45}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.summary?.totalQuestions || 45}</div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '0.25rem' }}>TOTAL PROBLEMS</div>
           </div>
         </div>
@@ -38,7 +57,7 @@ export default function AdminOverview({ analytics }) {
             <Activity size={28} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.submissions || 8920}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.summary?.totalSubmissions || 8920}</div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '0.25rem' }}>TOTAL SUBMISSIONS</div>
           </div>
         </div>
@@ -84,7 +103,7 @@ export default function AdminOverview({ analytics }) {
         <div className="card">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Submissions (Last 7 Days)</h3>
           <div style={{ display: 'flex', alignItems: 'flex-end', height: '200px', gap: '1rem', paddingTop: '2rem' }}>
-            {mockSubmissions.map((val, idx) => (
+            {chartData.map((val, idx) => (
               <div key={idx} style={{ 
                 flex: 1, 
                 backgroundColor: 'var(--color-primary)', 
