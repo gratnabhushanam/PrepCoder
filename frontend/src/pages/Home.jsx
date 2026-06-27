@@ -96,6 +96,8 @@ export default function Home() {
             </tbody>
           </table>
         </div>
+      </section>
+
       {/* Testimonials */}
       <section id="testimonials" className="testimonials-section" style={{ padding: '4rem 0' }}>
         <h2 className="section-title">What Our Users Say</h2>
