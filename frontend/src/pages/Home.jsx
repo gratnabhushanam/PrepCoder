@@ -10,7 +10,8 @@ export default function Home() {
   useEffect(() => {
     const fetchTrending = async () => {
       try {
-        const res = await axios.get('/api/coding/public/trending');
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const res = await axios.get(`${API_BASE}/coding/public/trending`);
         if (Array.isArray(res.data)) {
           setTrendingProblems(res.data);
         } else {
