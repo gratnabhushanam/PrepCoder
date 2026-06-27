@@ -11,7 +11,11 @@ export default function Home() {
     const fetchTrending = async () => {
       try {
         const res = await axios.get('/api/coding/public/trending');
-        setTrendingProblems(res.data);
+        if (Array.isArray(res.data)) {
+          setTrendingProblems(res.data);
+        } else {
+          console.error('Invalid response format', res.data);
+        }
       } catch (err) {
         console.error('Failed to fetch trending problems', err);
       }
