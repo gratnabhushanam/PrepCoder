@@ -220,18 +220,35 @@ export default function Profile() {
           <div className="card">
             <div className="card-header"><h3><Award size={18}/> Achievements</h3></div>
             <div className="badges-grid">
-              <div className="badge-card" style={{ '--badge-color': 'var(--color-warning)' }}>
-                <Zap size={24} className="badge-icon"/>
-                <span className="badge-title">7-Day Streak</span>
-              </div>
-              <div className="badge-card" style={{ '--badge-color': 'var(--color-primary)' }}>
-                <Star size={24} className="badge-icon"/>
-                <span className="badge-title">Rising Star</span>
-              </div>
-              <div className="badge-card" style={{ '--badge-color': 'var(--color-info)' }}>
-                <Code size={24} className="badge-icon"/>
-                <span className="badge-title">100 Problems</span>
-              </div>
+              {stats.streak >= 7 && (
+                <div className="badge-card" style={{ '--badge-color': 'var(--color-warning)' }}>
+                  <Zap size={24} className="badge-icon"/>
+                  <span className="badge-title">7-Day Streak</span>
+                </div>
+              )}
+              {stats.solved.total >= 1 && (
+                <div className="badge-card" style={{ '--badge-color': 'var(--color-success)' }}>
+                  <CheckCircle size={24} className="badge-icon"/>
+                  <span className="badge-title">First Code</span>
+                </div>
+              )}
+              {stats.solved.total >= 10 && (
+                <div className="badge-card" style={{ '--badge-color': 'var(--color-primary)' }}>
+                  <Star size={24} className="badge-icon"/>
+                  <span className="badge-title">Rising Star</span>
+                </div>
+              )}
+              {stats.solved.total >= 100 && (
+                <div className="badge-card" style={{ '--badge-color': 'var(--color-info)' }}>
+                  <Code size={24} className="badge-icon"/>
+                  <span className="badge-title">100 Problems</span>
+                </div>
+              )}
+              {stats.streak < 7 && stats.solved.total < 1 && (
+                <div style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', padding: '1rem' }}>
+                  Solve problems and maintain a streak to earn badges!
+                </div>
+              )}
             </div>
           </div>
 
@@ -239,27 +256,38 @@ export default function Profile() {
           <div className="card">
             <div className="card-header"><h3>Recent Activity</h3></div>
             <div className="activity-timeline">
-              <div className="timeline-item">
-                <div className="timeline-icon success"><CheckCircle size={14}/></div>
-                <div className="timeline-content">
-                  <p>Solved <strong>Two Sum</strong></p>
-                  <small className="text-muted">2 hours ago</small>
+              {dashboardStats?.recentActivity && dashboardStats.recentActivity.length > 0 ? (
+                dashboardStats.recentActivity.map((activity, index) => {
+                  // Determine icon based on text content
+                  let Icon = CheckCircle;
+                  let colorClass = "success";
+                  if (activity.text.includes('ATS')) {
+                    Icon = Trophy;
+                    colorClass = "primary";
+                  } else if (activity.text.includes('Streak')) {
+                    Icon = Zap;
+                    colorClass = "warning";
+                  }
+
+                  const timeString = new Date(activity.date).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                  });
+
+                  return (
+                    <div className="timeline-item" key={activity.id || index}>
+                      <div className={`timeline-icon ${colorClass}`}><Icon size={14}/></div>
+                      <div className="timeline-content">
+                        <p>{activity.text}</p>
+                        <small className="text-muted">{timeString}</small>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ color: 'var(--text-muted)', padding: '1rem' }}>
+                  No recent activity found. Start coding!
                 </div>
-              </div>
-              <div className="timeline-item">
-                <div className="timeline-icon warning"><Zap size={14}/></div>
-                <div className="timeline-content">
-                  <p>Earned <strong>7-Day Streak</strong> Badge</p>
-                  <small className="text-muted">Yesterday</small>
-                </div>
-              </div>
-              <div className="timeline-item">
-                <div className="timeline-icon primary"><Trophy size={14}/></div>
-                <div className="timeline-content">
-                  <p>Participated in <strong>Weekly Contest 104</strong></p>
-                  <small className="text-muted">3 days ago</small>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
