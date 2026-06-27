@@ -67,34 +67,34 @@ export default function AdminOverview({ analytics }) {
             <TrendingUp size={28} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>$3,240</div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '0.25rem' }}>MONTHLY REVENUE</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{analytics?.summary?.activeProblems || 0}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '0.25rem' }}>ACTIVE PROBLEMS</div>
           </div>
         </div>
       </div>
 
       {/* Secondary Row: Today's Metrics */}
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem' }}>Today's Activity</h3>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem' }}>Today's Activity & Metrics</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
         <div className="card glass" style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
           <CheckCircle size={24} style={{ color: 'var(--color-success)', margin: '0 auto 0.5rem' }} />
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>845</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{analytics?.summary?.acceptedSolutions || 0}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Accepted Solutions</div>
         </div>
         <div className="card glass" style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
           <AlertTriangle size={24} style={{ color: 'var(--color-danger)', margin: '0 auto 0.5rem' }} />
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>124</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{analytics?.submissionsStatus?.['Compilation Error'] || 0}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Compiler Errors</div>
         </div>
         <div className="card glass" style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
           <Activity size={24} style={{ color: 'var(--color-warning)', margin: '0 auto 0.5rem' }} />
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>312</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{analytics?.submissionsStatus?.['Runtime Error'] || 0}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Runtime Errors</div>
         </div>
         <div className="card glass" style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
           <Users size={24} style={{ color: 'var(--color-info)', margin: '0 auto 0.5rem' }} />
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>89</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>New Registrations</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{analytics?.summary?.newUsersToday || 0}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>New Registrations Today</div>
         </div>
       </div>
 
