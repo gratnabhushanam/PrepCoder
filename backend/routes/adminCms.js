@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { Feature, Testimonial } = require('../config/db');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // All routes here are protected and require admin role
-router.use(protect, admin);
+router.use(protect, adminOnly);
 
 // --- FEATURES ---
 
